@@ -2,7 +2,7 @@
 
 ## How to use
 
-### Add package initialization to Test_Main, or create basic Test_Main if not exitst
+### Add package initialization to Test_Main, or create basic Test_Main if not exists
 
 ```golang
 package main
