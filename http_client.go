@@ -39,18 +39,18 @@ func (c *HTTPClient) do(method, url string, bodyIn []byte) (*http.Response, erro
 		return nil, fmt.Errorf("NewRequest error: %w", err)
 	}
 
-	return c.Do(req)
+	return c.c.Do(req)
 }
 
 // Do allows any custom requests.
-func (c *HTTPClient) Do(req *http.Request) (*http.Response, error) {
+func (c *HTTPClient) Do(req *http.Request) *http.Response {
 	c.t.Helper()
 
 	resp, err := c.c.Do(req)
 	if err != nil {
 		c.t.Errorf("client Do error: %v", err)
 	}
-	return resp, err
+	return resp
 }
 
 // Get makes GET requests and returns *http.Response.
