@@ -68,41 +68,40 @@ func TestHTTPServer(t *testing.T) {
 
 ```golang
 func TestHTTPClientDo(t *testing.T) {
-    srv := steron.HTTP().Server(t)
-    srv.HandleFunc("/", func(w http.ResponseWriter, _ *http.Request) {
-        w.WriteHeader(http.StatusOK)
-    })
-    client := steron.HTTP().Client(t)
-    
-    req, err := http.NewRequest(http.MethodGet, srv.Addr(), nil)
-    if err != nil {
-        t.Fatal(err)
-    }
-    
-    resp := client.Do(req)
-    if resp.StatusCode != http.StatusOK {
-        t.Fatal("status code is not 200")
-    }
+	srv := steron.HTTP().Server(t)
+	srv.HandleFunc("/", func(w http.ResponseWriter, _ *http.Request) {
+		w.WriteHeader(http.StatusOK)
+	})
+	client := steron.HTTP().Client(t)
+
+	req, err := http.NewRequest(http.MethodGet, srv.Addr(), nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	resp := client.Do(req)
+	if resp.StatusCode != http.StatusOK {
+		t.Fatal("status code is not 200")
+	}
 }
 ```
 
 - You may also use helpers to make it easier
 ```golang
 func TestHTTPClientGetJSON(t *testing.T) {
-    srv := steron.HTTP().Server(t)
-    srv.HandleFunc("/", func(w http.ResponseWriter, _ *http.Request) {
-        w.WriteHeader(http.StatusOK)
-        _, _ = w.Write([]byte(`{"key":"value"}`))
-    })
-    client := steron.HTTP().Client(t)
-    
-    data := make(map[string]any, 0)
-    
-    client.GetJSON(srv.Addr(), &data)
-    
-    if len(data) == 0 {
-        t.Fatal("zero values received")
-    }
+	srv := steron.HTTP().Server(t)
+	srv.HandleFunc("/", func(w http.ResponseWriter, _ *http.Request) {
+		w.WriteHeader(http.StatusOK)
+		_, _ = w.Write([]byte(`{"key":"value"}`))
+	})
+	client := steron.HTTP().Client(t)
+
+	data := make(map[string]any, 0)
+
+	client.GetJSON(srv.Addr(), &data)
+	if len(data) == 0 {
+		t.Fatal("zero values received")
+	}
 }
 ```
 - Kafka Consume/Produce
