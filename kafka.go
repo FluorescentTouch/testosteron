@@ -18,16 +18,9 @@ type KafkaClient struct {
 
 func newKafkaClient(t *testing.T, addr []string) *KafkaClient {
 	cfg := sarama.NewConfig()
-
-	// TODO: add and provide version from dockertest
-	v, err := sarama.ParseKafkaVersion("3.5.0")
-	if err != nil {
-		t.Errorf("kafka version parse error: %v", err)
-		return nil
-	}
-	cfg.Version = v
-
+	cfg.Version = sarama.V3_5_1_0
 	cfg.Producer.Return.Successes = true
+	cfg.Consumer.Offsets.Initial = sarama.OffsetOldest
 
 	c, err := sarama.NewClient(addr, cfg)
 	if err != nil {
@@ -44,7 +37,7 @@ func newKafkaClient(t *testing.T, addr []string) *KafkaClient {
 	client := &KafkaClient{c: c, cg: cg, t: t}
 
 	t.Cleanup(func() {
-		err := cg.Close()
+		err = cg.Close()
 		if err != nil {
 			t.Errorf("consumer group close error: %v", err)
 		}
