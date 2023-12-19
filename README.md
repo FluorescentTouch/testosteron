@@ -4,7 +4,7 @@
 
 ### Add package initialization to Test_Main, or create basic Test_Main if not exitst
 
-```
+```golang
 package main
 
 import (
@@ -46,7 +46,7 @@ func TestMain(m *testing.M) {
 
 - HTTP Server to test remote requests
 
-```
+```golang
 func TestHTTPServer(t *testing.T) {
 	srv := steron.HTTP().Server(t)
 	srv.HandleFunc("/", func(w http.ResponseWriter, _ *http.Request) {
@@ -66,7 +66,7 @@ func TestHTTPServer(t *testing.T) {
 
 - HTTP Client to test application endpoints
 
-```
+```golang
 func TestHTTPClientDo(t *testing.T) {
 	client := steron.HTTP().Client(t)
 
@@ -84,7 +84,7 @@ func TestHTTPClientDo(t *testing.T) {
 ```
 
 - You may also use helpers to make it easier
-```
+```golang
 func TestHTTPClientGetJSON(t *testing.T) {
 	client := steron.HTTP().Client(t)
 
@@ -98,7 +98,7 @@ func TestHTTPClientGetJSON(t *testing.T) {
 }
 ```
 - Kafka Consume/Produce
-```
+```golang
 func TestKafka(t *testing.T) {
 	kafkaClient := steron.Kafka().Client(t)
 
