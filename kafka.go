@@ -124,6 +124,9 @@ func (k consumer) ConsumeClaim(session sarama.ConsumerGroupSession, claim sarama
 		case <-k.ctx.Done():
 			return nil
 		case m := <-claim.Messages():
+			if m == nil {
+				continue
+			}
 			k.c <- m
 			session.MarkMessage(m, k.t.Name())
 		}
@@ -144,7 +147,7 @@ func (k *KafkaClient) Produce(topic string, data []byte) {
 func (k *KafkaClient) ProduceWithKey(topic string, key, data []byte, headers ...sarama.RecordHeader) {
 	msg := &sarama.ProducerMessage{
 		Topic:   topic,
-		Key:     sarama.ByteEncoder(data),
+		Key:     sarama.ByteEncoder(key),
 		Value:   sarama.ByteEncoder(data),
 		Headers: headers,
 	}
