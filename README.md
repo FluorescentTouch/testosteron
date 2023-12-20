@@ -44,30 +44,11 @@ func TestMain(m *testing.M) {
 
 ### Use required tools while testing application
 
-- HTTP Server to test remote requests
-
-```golang
-func TestHTTPServer(t *testing.T) {
-	srv := steron.HTTP().Server(t)
-	srv.HandleFunc("/", func(w http.ResponseWriter, _ *http.Request) {
-		w.WriteHeader(http.StatusOK)
-	})
-
-	resp, err := http.DefaultClient.Get(srv.Addr())
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	if resp.StatusCode != http.StatusOK {
-		t.Fatal("status code is not 200")
-	}
-}
-```
-
-- HTTP Client to test application endpoints
+- HTTP Server and Client to test application endpoints
 
 ```golang
 func TestHTTPClientDo(t *testing.T) {
+	// can be your server
 	srv := steron.HTTP().Server(t)
 	srv.HandleFunc("/", func(w http.ResponseWriter, _ *http.Request) {
 		w.WriteHeader(http.StatusOK)
@@ -89,6 +70,7 @@ func TestHTTPClientDo(t *testing.T) {
 - You may also use helpers to make it easier
 ```golang
 func TestHTTPClientGetJSON(t *testing.T) {
+	// can be your server
 	srv := steron.HTTP().Server(t)
 	srv.HandleFunc("/", func(w http.ResponseWriter, _ *http.Request) {
 		w.WriteHeader(http.StatusOK)
