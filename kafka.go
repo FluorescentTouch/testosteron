@@ -63,8 +63,6 @@ func newKafkaClient(t *testing.T, addr []string) *KafkaClient {
 }
 
 func (k *KafkaClient) Consume(ctx context.Context, topic string) *sarama.ConsumerMessage {
-	ctx, cancel := context.WithCancel(context.Background())
-
 	msgChan := make(chan *sarama.ConsumerMessage)
 	errChan := make(chan error)
 
@@ -87,8 +85,6 @@ func (k *KafkaClient) Consume(ctx context.Context, topic string) *sarama.Consume
 	case err = <-errChan:
 		k.t.Errorf("KafkaClient consume error: %v", err)
 	}
-
-	cancel()
 
 	return msg
 }
