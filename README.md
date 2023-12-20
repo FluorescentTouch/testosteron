@@ -92,8 +92,11 @@ func TestKafka(t *testing.T) {
 	kafkaClient := steron.Kafka().Client(t)
 
 	kafkaClient.Produce("sample_topic", []byte("msg"))
-
-	msg := kafkaClient.Consume("sample_topic")
+	
+	ctx, cancel := context.WithTimeout(context.Background(), 5 * time.Second)
+	defer cancel()
+	
+	msg := kafkaClient.Consume(ctx, "sample_topic")
 	if len(msg.Value) == 0 {
 		t.Fatal("zero len message received")
 	}
