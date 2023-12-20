@@ -57,7 +57,7 @@ func (k *KafkaClient) Consume(topic string) *sarama.ConsumerMessage {
 	errChan := make(chan error)
 
 	go func() {
-		err := k.cg.Consume(ctx, []string{topic}, consumer{c: msgChan, ctx: ctx})
+		err := k.cg.Consume(ctx, []string{topic}, consumer{c: msgChan, ctx: ctx, t: k.t})
 		if err != nil {
 			errChan <- err
 		}
