@@ -32,13 +32,14 @@ func TestMain(m *testing.M) {
 	})
 
 	// provide test tools configuration to application
-	os.Setenv("REMOTE_SERVER_ADDR", srv.Addr())
-	os.Setenv("KAFKA_BROKERS", strings.Join(cfg.KafkaBrokers, ","))
-
-	steron.Cleanup()
+	_ = os.Setenv("REMOTE_SERVER_ADDR", srv.Addr())
+	_ = os.Setenv("KAFKA_BROKERS", strings.Join(cfg.KafkaBrokers, ","))
 
 	// run the app
-	os.Exit(m.Run())
+	code := m.Run()
+
+	steron.Cleanup()
+	os.Exit(code)
 }
 ```
 
