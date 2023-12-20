@@ -97,12 +97,12 @@ func (k *KafkaClient) cleanup() error {
 	k.t.Helper()
 
 	// delete all topics
-	t, err := k.client.Topics()
+	topics, err := k.client.Topics()
 	if err != nil {
 		return fmt.Errorf("cant retrieve topic list")
 	}
 
-	for _, topic := range t {
+	for _, topic := range topics {
 		err = k.admin.DeleteTopic(topic)
 		if err != nil {
 			return fmt.Errorf("cant delete topic: %s", topic)
