@@ -10,8 +10,9 @@ import (
 )
 
 type KafkaClient struct {
-	c  sarama.Client
-	cg sarama.ConsumerGroup
+	client sarama.Client
+	group  sarama.ConsumerGroup
+	admin  sarama.ClusterAdmin
 
 	t *testing.T
 }
@@ -28,13 +29,24 @@ func newKafkaClient(t *testing.T, addr []string) *KafkaClient {
 		return nil
 	}
 
+	ca, err := sarama.NewClusterAdmin(addr, cfg)
+	if err != nil {
+		t.Errorf("new kafka cluster admin error: %v", err)
+		return nil
+	}
+
 	cg, err := sarama.NewConsumerGroupFromClient(uuid.New().String(), c)
 	if err != nil {
 		t.Errorf("new consumer group error: %v", err)
 		return nil
 	}
 
-	client := &KafkaClient{c: c, cg: cg, t: t}
+	client := &KafkaClient{
+		client: c,
+		group:  cg,
+		t:      t,
+		admin:  ca,
+	}
 
 	t.Cleanup(func() {
 		err = cg.Close()
@@ -57,7 +69,7 @@ func (k *KafkaClient) Consume(topic string) *sarama.ConsumerMessage {
 	errChan := make(chan error)
 
 	go func() {
-		err := k.cg.Consume(ctx, []string{topic}, consumer{c: msgChan, ctx: ctx, t: k.t})
+		err := k.group.Consume(ctx, []string{topic}, consumer{c: msgChan, ctx: ctx, t: k.t})
 		if err != nil {
 			errChan <- err
 		}
@@ -83,20 +95,19 @@ func (k *KafkaClient) cleanup() error {
 	k.t.Helper()
 
 	// delete all topics
-	t, err := k.c.Topics()
+	t, err := k.client.Topics()
 	if err != nil {
 		return fmt.Errorf("cant retrieve topic list")
 	}
-	c, err := k.c.Controller()
-	if err != nil {
-		return fmt.Errorf("cant get controller")
-	}
-	_, err = c.DeleteTopics(&sarama.DeleteTopicsRequest{Topics: t})
-	if err != nil {
-		return fmt.Errorf("cant delete topics")
+
+	for _, topic := range t {
+		err = k.admin.DeleteTopic(topic)
+		if err != nil {
+			return fmt.Errorf("cant delete topic: %s", topic)
+		}
 	}
 	// close client
-	err = k.c.Close()
+	err = k.client.Close()
 	if err != nil {
 		return fmt.Errorf("cant close client")
 	}
@@ -158,7 +169,7 @@ func (k *KafkaClient) ProduceWithKey(topic string, key, data []byte, headers ...
 }
 
 func (k *KafkaClient) produce(msg *sarama.ProducerMessage) error {
-	p, err := sarama.NewSyncProducerFromClient(k.c)
+	p, err := sarama.NewSyncProducerFromClient(k.client)
 	if err != nil {
 		return fmt.Errorf("new producer: %w", err)
 	}
