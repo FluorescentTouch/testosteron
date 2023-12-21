@@ -3,6 +3,7 @@ package steron
 import (
 	"flag"
 	"fmt"
+	"net/http"
 	"testing"
 
 	"github.com/FluorescentTouch/testosteron/docker"
@@ -16,14 +17,25 @@ var (
 func init() {
 	helper := &Helper{
 		hyperText: &HTTPHelper{
-			clients: sync.MakeSyncMap[*HTTPClient](),
-			servers: sync.MakeSyncMap[*HTTPServer](),
+			clients: sync.MakeSyncMap[WebClient](),
+			servers: sync.MakeSyncMap[WebServer](),
 		},
 		kafka: &KafkaHelper{
 			clients: sync.MakeSyncMap[*KafkaClient](),
 		},
 	}
 	h = helper
+}
+
+type WebServer interface {
+	HandleFunc(pattern string, handler http.HandlerFunc)
+	Addr() string
+}
+
+type WebClient interface {
+	Do(req *http.Request) *http.Response
+	Get(url string) *http.Response
+	GetJSON(url string, dst any)
 }
 
 type Helper struct {
@@ -38,8 +50,8 @@ type Config struct {
 }
 
 type HTTPHelper struct {
-	clients sync.Map[*HTTPClient] // t.Name:Client
-	servers sync.Map[*HTTPServer] // t.Name:Server
+	clients sync.Map[WebClient] // t.Name:Client
+	servers sync.Map[WebServer] // t.Name:Server
 
 	mainServer *HTTPMainServer // server started for main init
 }
@@ -94,7 +106,7 @@ func HTTP() *HTTPHelper {
 
 type option func(*Helper) error
 
-func (h *HTTPHelper) Client(t *testing.T) *HTTPClient {
+func (h *HTTPHelper) Client(t *testing.T) WebClient {
 	if c, ok := h.clients.Get(t.Name()); ok {
 		return c
 	}
@@ -110,7 +122,7 @@ func (h *HTTPHelper) Client(t *testing.T) *HTTPClient {
 	return c
 }
 
-func (h *HTTPHelper) Server(t *testing.T) *HTTPServer {
+func (h *HTTPHelper) Server(t *testing.T) WebServer {
 	if s, ok := h.servers.Get(t.Name()); ok {
 		return s
 	}
