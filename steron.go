@@ -10,6 +10,8 @@ import (
 	"github.com/IBM/sarama"
 
 	"github.com/FluorescentTouch/testosteron/docker"
+	"github.com/FluorescentTouch/testosteron/http/client"
+	"github.com/FluorescentTouch/testosteron/http/server"
 	"github.com/FluorescentTouch/testosteron/kafka"
 	"github.com/FluorescentTouch/testosteron/sync"
 )
@@ -34,6 +36,7 @@ func init() {
 type WebServer interface {
 	HandleFunc(pattern string, handler http.HandlerFunc)
 	Addr() string
+	Cleanup()
 }
 
 type WebClient interface {
@@ -63,7 +66,7 @@ type HTTPHelper struct {
 	clients sync.Map[WebClient] // t.Name:Client
 	servers sync.Map[WebServer] // t.Name:Server
 
-	mainServer *HTTPMainServer // server started for main init
+	mainServer WebServer // server started for main init
 }
 
 type KafkaHelper struct {
@@ -99,7 +102,7 @@ func AddKafka(h *Helper) error {
 
 func (h *Helper) cleanup() {
 	if h.hyperText.mainServer != nil {
-		h.hyperText.mainServer.cleanup()
+		h.hyperText.mainServer.Cleanup()
 	}
 	if h.kafka.broker != nil {
 		_ = h.kafka.broker.Cleanup()
@@ -121,7 +124,7 @@ func (h *HTTPHelper) Client(t *testing.T) WebClient {
 		return c
 	}
 
-	c := newHTTPClient(t)
+	c := client.NewHTTPClient(t)
 
 	h.clients.Set(t.Name(), c)
 
@@ -137,7 +140,7 @@ func (h *HTTPHelper) Server(t *testing.T) WebServer {
 		return s
 	}
 
-	s := newHTTPServer(t)
+	s := server.NewHTTPServer(t)
 
 	h.servers.Set(t.Name(), s)
 
@@ -148,8 +151,8 @@ func (h *HTTPHelper) Server(t *testing.T) WebServer {
 	return s
 }
 
-func (h *HTTPHelper) ServerMain(m *testing.M) *HTTPMainServer {
-	h.mainServer = newHTTPMainServer(m)
+func (h *HTTPHelper) ServerMain(m *testing.M) WebServer {
+	h.mainServer = server.NewHTTPMainServer(m)
 	return h.mainServer
 }
 
@@ -185,7 +188,6 @@ func (h *KafkaHelper) Client(t *testing.T) KafkaClient {
 	}
 
 	c := kafka.NewClient(t, broker.Brokers())
-
 	h.clients.Set(t.Name(), c)
 
 	t.Cleanup(func() {
