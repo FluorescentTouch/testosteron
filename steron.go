@@ -1,12 +1,16 @@
 package steron
 
 import (
+	"context"
 	"flag"
 	"fmt"
 	"net/http"
 	"testing"
 
+	"github.com/IBM/sarama"
+
 	"github.com/FluorescentTouch/testosteron/docker"
+	"github.com/FluorescentTouch/testosteron/kafka"
 	"github.com/FluorescentTouch/testosteron/sync"
 )
 
@@ -21,7 +25,7 @@ func init() {
 			servers: sync.MakeSyncMap[WebServer](),
 		},
 		kafka: &KafkaHelper{
-			clients: sync.MakeSyncMap[*KafkaClient](),
+			clients: sync.MakeSyncMap[KafkaClient](),
 		},
 	}
 	h = helper
@@ -36,6 +40,12 @@ type WebClient interface {
 	Do(req *http.Request) *http.Response
 	Get(url string) *http.Response
 	GetJSON(url string, dst any)
+}
+
+type KafkaClient interface {
+	Consume(ctx context.Context, topic string) *sarama.ConsumerMessage
+	Produce(topic string, value []byte, h ...sarama.RecordHeader)
+	ProduceWithKey(topic string, key []byte, data []byte, headers ...sarama.RecordHeader)
 }
 
 type Helper struct {
@@ -57,7 +67,7 @@ type HTTPHelper struct {
 }
 
 type KafkaHelper struct {
-	clients sync.Map[*KafkaClient] // t.Name:Client
+	clients sync.Map[KafkaClient] // t.Name:Client
 
 	broker *docker.Kafka
 }
@@ -151,7 +161,7 @@ func (h *Helper) Kafka() *KafkaHelper {
 	return h.kafka
 }
 
-func (h *KafkaHelper) Client(t *testing.T) *KafkaClient {
+func (h *KafkaHelper) Client(t *testing.T) KafkaClient {
 	if c, ok := h.clients.Get(t.Name()); ok {
 		return c
 	}
@@ -174,7 +184,7 @@ func (h *KafkaHelper) Client(t *testing.T) *KafkaClient {
 		broker = b
 	}
 
-	c := newKafkaClient(t, broker.Brokers())
+	c := kafka.NewClient(t, broker.Brokers())
 
 	h.clients.Set(t.Name(), c)
 
