@@ -2,9 +2,9 @@
 
 ## How to use
 
-### Add package initialization to Test_Main, or create basic Test_Main if not exitst
+### Add package initialization to Test_Main, or create basic Test_Main if not exists
 
-```
+```golang
 package main
 
 import (
@@ -32,51 +32,36 @@ func TestMain(m *testing.M) {
 	})
 
 	// provide test tools configuration to application
-	os.Setenv("REMOTE_SERVER_ADDR", srv.Addr())
-	os.Setenv("KAFKA_BROKERS", strings.Join(cfg.KafkaBrokers, ","))
-
-	steron.Cleanup()
+	_ = os.Setenv("REMOTE_SERVER_ADDR", srv.Addr())
+	_ = os.Setenv("KAFKA_BROKERS", strings.Join(cfg.KafkaBrokers, ","))
 
 	// run the app
-	os.Exit(m.Run())
+	code := m.Run()
+
+	steron.Cleanup()
+	os.Exit(code)
 }
 ```
 
 ### Use required tools while testing application
 
-- HTTP Server to test remote requests
+- HTTP Server and Client to test application endpoints
 
-```
-func TestHTTPServer(t *testing.T) {
+```golang
+func TestHTTPClientDo(t *testing.T) {
+	// can be your server
 	srv := steron.HTTP().Server(t)
 	srv.HandleFunc("/", func(w http.ResponseWriter, _ *http.Request) {
 		w.WriteHeader(http.StatusOK)
 	})
-
-	resp, err := http.DefaultClient.Get(srv.Addr())
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	if resp.StatusCode != http.StatusOK {
-		t.Fatal("status code is not 200")
-	}
-}
-```
-
-- HTTP Client to test application endpoints
-
-```
-func TestHTTPClientDo(t *testing.T) {
 	client := steron.HTTP().Client(t)
 
-	req := http.NewRequest(http.MethodGet, "http://0.0.0.0:1234", nil)
-
-	resp, err := client.Do(req)
+	req, err := http.NewRequest(http.MethodGet, srv.Addr(), nil)
 	if err != nil {
 		t.Fatal(err)
 	}
 
+	resp := client.Do(req)
 	if resp.StatusCode != http.StatusOK {
 		t.Fatal("status code is not 200")
 	}
@@ -84,27 +69,35 @@ func TestHTTPClientDo(t *testing.T) {
 ```
 
 - You may also use helpers to make it easier
-```
+```golang
 func TestHTTPClientGetJSON(t *testing.T) {
+	// can be your server
+	srv := steron.HTTP().Server(t)
+	srv.HandleFunc("/", func(w http.ResponseWriter, _ *http.Request) {
+		w.WriteHeader(http.StatusOK)
+		_, _ = w.Write([]byte(`{"key":"value"}`))
+	})
 	client := steron.HTTP().Client(t)
 
-	data := make(map[string]interface{}, 0)
+	data := make(map[string]any, 0)
 
-	client.GetJSON("http://0.0.0.0:1234", &data)
-
+	client.GetJSON(srv.Addr(), &data)
 	if len(data) == 0 {
 		t.Fatal("zero values received")
 	}
 }
 ```
 - Kafka Consume/Produce
-```
+```golang
 func TestKafka(t *testing.T) {
 	kafkaClient := steron.Kafka().Client(t)
 
 	kafkaClient.Produce("sample_topic", []byte("msg"))
-
-	msg := kafkaClient.Consume("sample_topic")
+	
+	ctx, cancel := context.WithTimeout(context.Background(), 5 * time.Second)
+	defer cancel()
+	
+	msg := kafkaClient.Consume(ctx, "sample_topic")
 	if len(msg.Value) == 0 {
 		t.Fatal("zero len message received")
 	}

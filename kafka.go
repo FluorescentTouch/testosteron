@@ -10,28 +10,28 @@ import (
 )
 
 type KafkaClient struct {
-	c  sarama.Client
-	cg sarama.ConsumerGroup
+	client sarama.Client
+	group  sarama.ConsumerGroup
+	admin  sarama.ClusterAdmin
 
 	t *testing.T
 }
 
 func newKafkaClient(t *testing.T, addr []string) *KafkaClient {
 	cfg := sarama.NewConfig()
-
-	// TODO: add and provide version from dockertest
-	v, err := sarama.ParseKafkaVersion("3.5.0")
-	if err != nil {
-		t.Errorf("kafka version parse error: %v", err)
-		return nil
-	}
-	cfg.Version = v
-
+	cfg.Version = sarama.V3_5_1_0
 	cfg.Producer.Return.Successes = true
+	cfg.Consumer.Offsets.Initial = sarama.OffsetOldest
 
 	c, err := sarama.NewClient(addr, cfg)
 	if err != nil {
 		t.Errorf("new kafka client error: %v", err)
+		return nil
+	}
+
+	ca, err := sarama.NewClusterAdmin(addr, cfg)
+	if err != nil {
+		t.Errorf("new kafka cluster admin error: %v", err)
 		return nil
 	}
 
@@ -41,10 +41,15 @@ func newKafkaClient(t *testing.T, addr []string) *KafkaClient {
 		return nil
 	}
 
-	client := &KafkaClient{c: c, cg: cg, t: t}
+	client := &KafkaClient{
+		client: c,
+		group:  cg,
+		t:      t,
+		admin:  ca,
+	}
 
 	t.Cleanup(func() {
-		err := cg.Close()
+		err = cg.Close()
 		if err != nil {
 			t.Errorf("consumer group close error: %v", err)
 		}
@@ -57,14 +62,12 @@ func newKafkaClient(t *testing.T, addr []string) *KafkaClient {
 	return client
 }
 
-func (k *KafkaClient) Consume(topic string) *sarama.ConsumerMessage {
-	ctx, cancel := context.WithCancel(context.Background())
-
+func (k *KafkaClient) Consume(ctx context.Context, topic string) *sarama.ConsumerMessage {
 	msgChan := make(chan *sarama.ConsumerMessage)
 	errChan := make(chan error)
 
 	go func() {
-		err := k.cg.Consume(ctx, []string{topic}, consumer{c: msgChan, ctx: ctx})
+		err := k.group.Consume(ctx, []string{topic}, consumer{c: msgChan, ctx: ctx, t: k.t})
 		if err != nil {
 			errChan <- err
 		}
@@ -76,12 +79,12 @@ func (k *KafkaClient) Consume(topic string) *sarama.ConsumerMessage {
 	)
 
 	select {
+	case <-ctx.Done():
+		k.t.Errorf("consume to topic: '%s' stop with context.Done()", topic)
 	case msg = <-msgChan:
 	case err = <-errChan:
 		k.t.Errorf("KafkaClient consume error: %v", err)
 	}
-
-	cancel()
 
 	return msg
 }
@@ -90,20 +93,19 @@ func (k *KafkaClient) cleanup() error {
 	k.t.Helper()
 
 	// delete all topics
-	t, err := k.c.Topics()
+	topics, err := k.client.Topics()
 	if err != nil {
 		return fmt.Errorf("cant retrieve topic list")
 	}
-	c, err := k.c.Controller()
-	if err != nil {
-		return fmt.Errorf("cant get controller")
-	}
-	_, err = c.DeleteTopics(&sarama.DeleteTopicsRequest{Topics: t})
-	if err != nil {
-		return fmt.Errorf("cant delete topics")
+
+	for _, topic := range topics {
+		err = k.admin.DeleteTopic(topic)
+		if err != nil {
+			return fmt.Errorf("cant delete topic: %s", topic)
+		}
 	}
 	// close client
-	err = k.c.Close()
+	err = k.client.Close()
 	if err != nil {
 		return fmt.Errorf("cant close client")
 	}
@@ -131,6 +133,9 @@ func (k consumer) ConsumeClaim(session sarama.ConsumerGroupSession, claim sarama
 		case <-k.ctx.Done():
 			return nil
 		case m := <-claim.Messages():
+			if m == nil {
+				continue
+			}
 			k.c <- m
 			session.MarkMessage(m, k.t.Name())
 		}
@@ -151,7 +156,7 @@ func (k *KafkaClient) Produce(topic string, data []byte) {
 func (k *KafkaClient) ProduceWithKey(topic string, key, data []byte, headers ...sarama.RecordHeader) {
 	msg := &sarama.ProducerMessage{
 		Topic:   topic,
-		Key:     sarama.ByteEncoder(data),
+		Key:     sarama.ByteEncoder(key),
 		Value:   sarama.ByteEncoder(data),
 		Headers: headers,
 	}
@@ -162,7 +167,7 @@ func (k *KafkaClient) ProduceWithKey(topic string, key, data []byte, headers ...
 }
 
 func (k *KafkaClient) produce(msg *sarama.ProducerMessage) error {
-	p, err := sarama.NewSyncProducerFromClient(k.c)
+	p, err := sarama.NewSyncProducerFromClient(k.client)
 	if err != nil {
 		return fmt.Errorf("new producer: %w", err)
 	}
