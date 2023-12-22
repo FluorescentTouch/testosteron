@@ -13,7 +13,7 @@ import (
 	"github.com/FluorescentTouch/testosteron/kafka/producer"
 )
 
-type Producer interface {
+type syncProducer interface {
 	io.Closer
 	SendMessage(topic string, value []byte, h ...sarama.RecordHeader) error
 	SendKeyMessage(topic string, key, value []byte, h ...sarama.RecordHeader) error
@@ -23,7 +23,7 @@ type Client struct {
 	client   sarama.Client
 	group    sarama.ConsumerGroup
 	admin    sarama.ClusterAdmin
-	producer Producer
+	producer syncProducer
 
 	t *testing.T
 }
