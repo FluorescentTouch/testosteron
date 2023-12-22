@@ -29,7 +29,16 @@ type KafkaClient interface {
 	ProduceWithKey(topic string, key []byte, data []byte, headers ...sarama.RecordHeader)
 }
 
+type DbConfig struct {
+	Host     string
+	Name     string
+	User     string
+	Port     int
+	Password string
+}
+
 type Config struct {
+	dbConfig     DbConfig
 	kafkaBrokers []string
 }
 
@@ -69,6 +78,13 @@ func AddPostgres(h *Helper) error {
 		return fmt.Errorf("postgres init error: %w", err)
 	}
 	h.postgres.database = database
+	h.cfg.dbConfig = DbConfig{
+		Host:     database.Host(),
+		Name:     database.Name(),
+		User:     database.User(),
+		Port:     database.Port(),
+		Password: database.Password(),
+	}
 	return nil
 }
 

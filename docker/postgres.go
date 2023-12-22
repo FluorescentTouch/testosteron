@@ -3,6 +3,7 @@ package docker
 import (
 	"context"
 	"fmt"
+	"strconv"
 
 	"github.com/testcontainers/testcontainers-go"
 	"github.com/testcontainers/testcontainers-go/modules/postgres"
@@ -18,6 +19,7 @@ const (
 type Postgres struct {
 	ctx       context.Context
 	host      string
+	port      int
 	user      string
 	password  string
 	name      string
@@ -46,13 +48,19 @@ func NewPostgres() (*Postgres, error) {
 		return nil, fmt.Errorf("postgres get port error: %w", err)
 	}
 
-	var port string
+	var hostPost string
 	if len(ports[dbPort]) > 0 {
-		port = ports[dbPort][0].HostPort
+		hostPost = ports[dbPort][0].HostPort
+	}
+
+	port, err := strconv.Atoi(hostPost)
+	if err != nil {
+		return nil, fmt.Errorf("port '%s' parse error: %w", hostPost, err)
 	}
 	ps := &Postgres{
 		ctx:       context.Background(),
-		host:      fmt.Sprintf("%s:%s", host, port),
+		host:      host,
+		port:      port,
 		user:      dbUserName,
 		password:  dbPassword,
 		name:      dbName,
@@ -71,6 +79,10 @@ func (p *Postgres) Name() string {
 
 func (p *Postgres) User() string {
 	return p.user
+}
+
+func (p *Postgres) Port() int {
+	return p.port
 }
 
 func (p *Postgres) Password() string {
