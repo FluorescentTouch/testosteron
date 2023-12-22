@@ -30,7 +30,11 @@ type KafkaClient interface {
 }
 
 type Config struct {
-	KafkaBrokers []string
+	kafkaBrokers []string
+}
+
+func (c Config) KafkaBrokers() []string {
+	return c.kafkaBrokers
 }
 
 func Init(options ...option) (Config, error) {
@@ -55,6 +59,7 @@ func AddKafka(h *Helper) error {
 		return fmt.Errorf("kafka init error: %w", err)
 	}
 	h.kafka.broker = broker
+	h.cfg.kafkaBrokers = broker.Brokers()
 	return nil
 }
 
