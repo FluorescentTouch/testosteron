@@ -1,10 +1,11 @@
 package steron
 
 import (
+	"testing"
+
 	"github.com/FluorescentTouch/testosteron/docker"
 	"github.com/FluorescentTouch/testosteron/kafka"
 	"github.com/FluorescentTouch/testosteron/sync"
-	"testing"
 )
 
 type KafkaHelper struct {

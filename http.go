@@ -1,10 +1,11 @@
 package steron
 
 import (
+	"testing"
+
 	"github.com/FluorescentTouch/testosteron/http/client"
 	"github.com/FluorescentTouch/testosteron/http/server"
 	"github.com/FluorescentTouch/testosteron/sync"
-	"testing"
 )
 
 type HTTPHelper struct {
