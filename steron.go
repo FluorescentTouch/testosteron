@@ -38,12 +38,16 @@ type DbConfig struct {
 }
 
 type Config struct {
-	dbConfig     DbConfig
-	kafkaBrokers []string
+	postgresConfig DbConfig
+	kafkaBrokers   []string
 }
 
 func (c Config) KafkaBrokers() []string {
 	return c.kafkaBrokers
+}
+
+func (c Config) PgConfig() DbConfig {
+	return c.postgresConfig
 }
 
 func Init(options ...option) (Config, error) {
@@ -78,7 +82,7 @@ func AddPostgres(h *Helper) error {
 		return fmt.Errorf("postgres init error: %w", err)
 	}
 	h.postgres.database = database
-	h.cfg.dbConfig = DbConfig{
+	h.cfg.postgresConfig = DbConfig{
 		Host:     database.Host(),
 		Name:     database.Name(),
 		User:     database.User(),
