@@ -1,4 +1,4 @@
-package steron
+package client
 
 import (
 	"bytes"
@@ -15,7 +15,7 @@ type HTTPClient struct {
 	t *testing.T
 }
 
-func newHTTPClient(t *testing.T) *HTTPClient {
+func NewHTTPClient(t *testing.T) *HTTPClient {
 	t.Helper()
 
 	c := &HTTPClient{c: http.Client{}, t: t}

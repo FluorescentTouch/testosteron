@@ -1,4 +1,4 @@
-package steron
+package server
 
 import (
 	"net/http"
@@ -17,13 +17,13 @@ type HTTPServer struct {
 	t *testing.T
 }
 
-func newHTTPServer(t *testing.T) *HTTPServer {
+func NewHTTPServer(t *testing.T) *HTTPServer {
 	t.Helper()
 
 	r := chi.NewRouter()
 	s := &HTTPServer{s: httptest.NewServer(r), r: r, t: t}
 	t.Cleanup(func() {
-		s.cleanup()
+		s.Cleanup()
 	})
 	return s
 }
@@ -41,7 +41,7 @@ func (s *HTTPServer) Addr() string {
 	return s.s.URL
 }
 
-func (s *HTTPServer) cleanup() {
+func (s *HTTPServer) Cleanup() {
 	s.t.Helper()
 
 	s.s.Close()
@@ -56,7 +56,7 @@ type HTTPMainServer struct {
 	m *testing.M // not required, just for difference between HTTPServer
 }
 
-func newHTTPMainServer(m *testing.M) *HTTPMainServer {
+func NewHTTPMainServer(m *testing.M) *HTTPMainServer {
 	r := chi.NewRouter()
 	s := &HTTPMainServer{s: httptest.NewServer(r), r: r, m: m}
 	return s
@@ -71,6 +71,6 @@ func (s *HTTPMainServer) Addr() string {
 	return s.s.URL
 }
 
-func (s *HTTPMainServer) cleanup() {
+func (s *HTTPMainServer) Cleanup() {
 	s.s.Close()
 }

@@ -27,13 +27,13 @@ func TestMain(m *testing.M) {
 	// add http server, if application requires requests for startup
 	srv := steron.HTTP().ServerMain(m)
 	srv.HandleFunc("/web/config", func(w http.ResponseWriter, _ *http.Request, ) {
-		remoteConfig := fmt.Sprintf(`{"kafka_brokers":[%s]}`, strings.Join(cfg.KafkaBrokers, ","))
+		remoteConfig := fmt.Sprintf(`{"kafka_brokers":[%s]}`, strings.Join(cfg.KafkaBrokers(), ","))
 		_, _ = w.Write([]byte(remoteConfig))
 	})
 
 	// provide test tools configuration to application
 	_ = os.Setenv("REMOTE_SERVER_ADDR", srv.Addr())
-	_ = os.Setenv("KAFKA_BROKERS", strings.Join(cfg.KafkaBrokers, ","))
+	_ = os.Setenv("KAFKA_BROKERS", strings.Join(cfg.KafkaBrokers(), ","))
 
 	// run the app
 	code := m.Run()
