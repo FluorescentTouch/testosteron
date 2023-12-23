@@ -2,22 +2,19 @@ package steron
 
 import (
 	"context"
+	"testing"
+
 	"github.com/FluorescentTouch/testosteron/db"
 	"github.com/FluorescentTouch/testosteron/docker"
 	"github.com/FluorescentTouch/testosteron/sync"
-	"testing"
 )
 
-type PostgresClient interface {
-	//
-}
-
 type PostgresHelper struct {
-	clients  sync.Map[PostgresClient]
+	clients  sync.Map[DbClient]
 	database *docker.Postgres
 }
 
-func (p *PostgresHelper) Client(t *testing.T) PostgresClient {
+func (p *PostgresHelper) Client(t *testing.T) DbClient {
 	if c, ok := p.clients.Get(t.Name()); ok {
 		return c
 	}
@@ -42,13 +39,13 @@ func (p *PostgresHelper) Client(t *testing.T) PostgresClient {
 	conf := db.Config{
 		Host:     database.Host(),
 		User:     database.User(),
-		Port:     0,
+		Port:     database.Port(),
 		DbName:   database.Name(),
 		Password: database.Password(),
 	}
 
 	ctx := context.Background()
-	c, err := db.NewClient(ctx, t, conf)
+	c, err := db.NewClientPg(ctx, t, conf)
 	if err != nil {
 		t.Errorf("db new client error: %v", err)
 		return nil

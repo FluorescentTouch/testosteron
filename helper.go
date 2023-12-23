@@ -14,7 +14,7 @@ func init() {
 			clients: sync.MakeSyncMap[KafkaClient](),
 		},
 		postgres: &PostgresHelper{
-			clients: sync.MakeSyncMap[PostgresClient](),
+			clients: sync.MakeSyncMap[DbClient](),
 		},
 	}
 	helper = h

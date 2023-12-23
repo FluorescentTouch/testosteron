@@ -2,6 +2,7 @@ package steron
 
 import (
 	"context"
+	"database/sql"
 	"flag"
 	"fmt"
 	"net/http"
@@ -27,6 +28,11 @@ type KafkaClient interface {
 	Consume(ctx context.Context, topic string) *sarama.ConsumerMessage
 	Produce(topic string, value []byte, h ...sarama.RecordHeader)
 	ProduceWithKey(topic string, key []byte, data []byte, headers ...sarama.RecordHeader)
+}
+
+type DbClient interface {
+	DB() *sql.DB
+	Migrate(migrateDir string) error
 }
 
 type DbConfig struct {
