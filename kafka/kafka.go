@@ -5,12 +5,12 @@ import (
 	"fmt"
 	"io"
 	"testing"
+	"time"
 
 	"github.com/IBM/sarama"
-	"github.com/google/uuid"
 
-	"github.com/FluorescentTouch/testosteron/kafka/consumer"
 	"github.com/FluorescentTouch/testosteron/kafka/producer"
+	"github.com/FluorescentTouch/testosteron/kafka/reader"
 )
 
 type syncProducer interface {
@@ -21,9 +21,10 @@ type syncProducer interface {
 
 type Client struct {
 	client   sarama.Client
-	group    sarama.ConsumerGroup
+	consumer sarama.Consumer
 	admin    sarama.ClusterAdmin
 	producer syncProducer
+	reader   *reader.Reader
 
 	t *testing.T
 }
@@ -34,91 +35,67 @@ func NewClient(t *testing.T, addr []string) *Client {
 	cfg.Producer.Return.Successes = true
 	cfg.Consumer.Offsets.Initial = sarama.OffsetOldest
 
-	c, err := sarama.NewClient(addr, cfg)
-	if err != nil {
-		t.Errorf("new kafka client error: %v", err)
-		return nil
-	}
-
-	ca, err := sarama.NewClusterAdmin(addr, cfg)
-	if err != nil {
-		t.Errorf("new kafka cluster admin error: %v", err)
-		return nil
-	}
-
-	cg, err := sarama.NewConsumerGroupFromClient(uuid.New().String(), c)
-	if err != nil {
-		t.Errorf("new consumer group error: %v", err)
-		return nil
-	}
-
-	p, err := producer.New(c)
-	if err != nil {
-		t.Errorf("new producer error: %v", err)
-		return nil
-	}
-
 	client := &Client{
-		client:   c,
-		group:    cg,
-		t:        t,
-		admin:    ca,
-		producer: p,
+		t: t,
 	}
+	var err error
+
+	client.client, err = sarama.NewClient(addr, cfg)
+	if err != nil {
+		t.Errorf("new kafka client error: %s", err)
+		return nil
+	}
+
+	client.admin, err = sarama.NewClusterAdmin(addr, cfg)
+	if err != nil {
+		t.Errorf("new kafka cluster admin error: %s", err)
+		return nil
+	}
+
+	client.consumer, err = sarama.NewConsumerFromClient(client.client)
+	if err != nil {
+		t.Errorf("new consumer group error: %s", err)
+		return nil
+	}
+
+	client.producer, err = producer.New(client.client)
+	if err != nil {
+		t.Errorf("new producer error: %s", err)
+		return nil
+	}
+
+	client.reader = reader.New(t, client.consumer)
 
 	t.Cleanup(func() {
-		err = cg.Close()
-		if err != nil {
-			t.Errorf("consumer group close error: %v", err)
-		}
 		err = client.cleanup()
 		if err != nil {
-			t.Errorf("KafkaClient cleanup error: %v", err)
+			t.Errorf("KafkaClient cleanup error: %s", err)
 		}
 	})
 
 	return client
 }
 
-func (c *Client) Consume(ctx context.Context, topic string) *sarama.ConsumerMessage {
-	msgChan := make(chan *sarama.ConsumerMessage)
-	errChan := make(chan error)
-
-	go func() {
-		err := c.group.Consume(ctx, []string{topic}, consumer.NewChanConsumer(ctx, c.t, msgChan))
-		if err != nil {
-			errChan <- err
-		}
-	}()
-
-	var (
-		msg *sarama.ConsumerMessage
-		err error
-	)
-
-	select {
-	case <-ctx.Done():
-		c.t.Errorf("consume to topic: '%s' stop with context.Done()", topic)
-	case msg = <-msgChan:
-	case err = <-errChan:
-		c.t.Errorf("KafkaClient consume error: %v", err)
-	}
-
-	return msg
+func (c *Client) Consume(ctx context.Context, timeout time.Duration, topic string) *sarama.ConsumerMessage {
+	return c.reader.Read(ctx, timeout, topic)
 }
 
 func (c *Client) cleanup() error {
 	c.t.Helper()
 
-	err := c.producer.Close()
+	err := c.reader.Stop()
 	if err != nil {
-		return fmt.Errorf("cant close producer")
+		return fmt.Errorf("cant stop kafka reader: %s", err)
+	}
+	err = c.producer.Close()
+	if err != nil {
+		return fmt.Errorf("cant close producer: %s", err)
 	}
 
 	// delete all topics
 	topics, err := c.client.Topics()
 	if err != nil {
-		return fmt.Errorf("cant retrieve topic list")
+		return fmt.Errorf("cant retrieve topic list: %s", err)
 	}
 
 	for _, topic := range topics {
@@ -130,7 +107,7 @@ func (c *Client) cleanup() error {
 	// close client
 	err = c.client.Close()
 	if err != nil {
-		return fmt.Errorf("cant close client")
+		return fmt.Errorf("cant close client: %s", err)
 	}
 	return nil
 }
@@ -138,13 +115,13 @@ func (c *Client) cleanup() error {
 func (c *Client) Produce(topic string, value []byte, headers ...sarama.RecordHeader) {
 	err := c.producer.SendMessage(topic, value, headers...)
 	if err != nil {
-		c.t.Errorf("KafkaClient Produce error: %v", err)
+		c.t.Errorf("KafkaClient Produce error: %s", err)
 	}
 }
 
 func (c *Client) ProduceWithKey(topic string, key, value []byte, headers ...sarama.RecordHeader) {
 	err := c.producer.SendKeyMessage(topic, key, value, headers...)
 	if err != nil {
-		c.t.Errorf("KafkaClient ProduceWithKey error: %v", err)
+		c.t.Errorf("KafkaClient ProduceWithKey error: %s", err)
 	}
 }
