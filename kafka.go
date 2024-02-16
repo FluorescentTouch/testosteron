@@ -25,14 +25,14 @@ func (h *KafkaHelper) Client(t *testing.T) KafkaClient {
 	if broker == nil {
 		b, err := docker.NewKafka()
 		if err != nil {
-			t.Errorf("new broker err: %v", err)
+			t.Errorf("new broker err: %s", err)
 			return nil
 		}
 
 		t.Cleanup(func() {
 			err = b.Cleanup()
 			if err != nil {
-				t.Errorf("broker cleanup err: %v", err)
+				t.Errorf("broker cleanup err: %s", err)
 			}
 		})
 

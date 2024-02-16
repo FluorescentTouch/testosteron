@@ -6,6 +6,7 @@ import (
 	"flag"
 	"fmt"
 	"net/http"
+	"time"
 
 	"github.com/IBM/sarama"
 
@@ -25,7 +26,7 @@ type WebClient interface {
 }
 
 type KafkaClient interface {
-	Consume(ctx context.Context, topic string) *sarama.ConsumerMessage
+	Consume(ctx context.Context, timeout time.Duration, topic string) *sarama.ConsumerMessage
 	Produce(topic string, value []byte, h ...sarama.RecordHeader)
 	ProduceWithKey(topic string, key []byte, data []byte, headers ...sarama.RecordHeader)
 }

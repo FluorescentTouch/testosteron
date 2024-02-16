@@ -97,7 +97,8 @@ func TestKafka(t *testing.T) {
 	ctx, cancel := context.WithTimeout(context.Background(), 5 * time.Second)
 	defer cancel()
 	
-	msg := kafkaClient.Consume(ctx, "sample_topic")
+	timeout := time.Second * 10
+	msg := kafkaClient.Consume(ctx, timeout, "sample_topic")
 	if len(msg.Value) == 0 {
 		t.Fatal("zero len message received")
 	}

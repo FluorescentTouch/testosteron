@@ -48,7 +48,7 @@ func (c *HTTPClient) Do(req *http.Request) *http.Response {
 
 	resp, err := c.c.Do(req)
 	if err != nil {
-		c.t.Errorf("client Do error: %v", err)
+		c.t.Errorf("client Do error: %s", err)
 	}
 	return resp
 }
@@ -59,7 +59,7 @@ func (c *HTTPClient) Get(url string) *http.Response {
 
 	resp, err := c.do(http.MethodGet, url, nil)
 	if err != nil {
-		c.t.Errorf("HTTPClient Get: %v", err)
+		c.t.Errorf("HTTPClient Get: %s", err)
 		return nil
 	}
 	return resp
@@ -72,13 +72,13 @@ func (c *HTTPClient) GetJSON(url string, dst any) {
 
 	resp, err := c.do(http.MethodGet, url, nil)
 	if err != nil {
-		c.t.Errorf("HTTPClient Get: %v", err)
+		c.t.Errorf("HTTPClient Get: %s", err)
 		return
 	}
 
 	err = json.NewDecoder(resp.Body).Decode(dst)
 	if err != nil {
-		c.t.Errorf("HTTPClient Decode: %v", err)
+		c.t.Errorf("HTTPClient Decode: %s", err)
 		return
 	}
 }

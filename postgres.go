@@ -23,13 +23,13 @@ func (p *PostgresHelper) Client(t *testing.T) DbClient {
 	if database == nil {
 		d, err := docker.NewPostgres()
 		if err != nil {
-			t.Errorf("new database error: %v", err)
+			t.Errorf("new database error: %s", err)
 			return nil
 		}
 		t.Cleanup(func() {
 			err = d.Cleanup()
 			if err != nil {
-				t.Errorf("database cleanup error: %v", err)
+				t.Errorf("database cleanup error: %s", err)
 			}
 		})
 
@@ -47,7 +47,7 @@ func (p *PostgresHelper) Client(t *testing.T) DbClient {
 	ctx := context.Background()
 	c, err := db.NewClientPg(ctx, t, conf)
 	if err != nil {
-		t.Errorf("db new client error: %v", err)
+		t.Errorf("db new client error: %s", err)
 		return nil
 	}
 	p.clients.Set(t.Name(), c)

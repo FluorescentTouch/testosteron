@@ -32,7 +32,7 @@ func NewClientPg(ctx context.Context, t *testing.T, conf Config) (*ClientPg, err
 	t.Cleanup(func() {
 		err = client.cleanup()
 		if err != nil {
-			t.Errorf("PostgresClient cleanup error: %v", err)
+			t.Errorf("PostgresClient cleanup error: %s", err)
 		}
 	})
 	return client, nil
@@ -82,6 +82,6 @@ func (p *ClientPg) Migrate(migrateDir string) error {
 		return fmt.Errorf("pg migrate error: %w", err)
 	}
 
-	p.t.Log(fmt.Sprintf("Applied %d migrations. sourse: %v", n, migrationsList))
+	p.t.Log(fmt.Sprintf("Applied %d migrations. sourse: %s", n, migrationsList))
 	return nil
 }
