@@ -1,16 +1,14 @@
 module github.com/FluorescentTouch/testosteron
 
-go 1.21.3
+go 1.21
 
 require (
 	github.com/IBM/sarama v1.42.0
 	github.com/go-chi/chi/v5 v5.0.10
-	github.com/google/uuid v1.4.0
 	github.com/jmoiron/sqlx v1.3.5
 	github.com/lib/pq v1.10.9
 	github.com/rubenv/sql-migrate v1.6.0
 	github.com/testcontainers/testcontainers-go v0.26.0
-	github.com/testcontainers/testcontainers-go/modules/elasticsearch v0.26.0
 	github.com/testcontainers/testcontainers-go/modules/kafka v0.26.0
 	github.com/testcontainers/testcontainers-go/modules/postgres v0.26.0
 )
@@ -37,6 +35,7 @@ require (
 	github.com/gogo/protobuf v1.3.2 // indirect
 	github.com/golang/protobuf v1.5.3 // indirect
 	github.com/golang/snappy v0.0.4 // indirect
+	github.com/google/uuid v1.4.0 // indirect
 	github.com/hashicorp/errwrap v1.1.0 // indirect
 	github.com/hashicorp/go-multierror v1.1.1 // indirect
 	github.com/hashicorp/go-uuid v1.0.3 // indirect
