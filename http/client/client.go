@@ -7,6 +7,7 @@ import (
 	"io"
 	"net/http"
 	"testing"
+	"time"
 )
 
 // HTTPClient emulates any incoming http requests.
@@ -42,7 +43,7 @@ func (c *HTTPClient) do(method, url string, bodyIn []byte) (*http.Response, erro
 	return c.c.Do(req)
 }
 
-// Do allows any custom requests.
+// Do - allows any custom requests.
 func (c *HTTPClient) Do(req *http.Request) *http.Response {
 	c.t.Helper()
 
@@ -50,6 +51,8 @@ func (c *HTTPClient) Do(req *http.Request) *http.Response {
 	if err != nil {
 		c.t.Errorf("client Do error: %s", err)
 	}
+
+	time.Sleep(30 * time.Millisecond) // emulate network delay
 	return resp
 }
 

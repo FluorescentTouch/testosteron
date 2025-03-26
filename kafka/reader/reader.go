@@ -55,6 +55,10 @@ func (r *Reader) Read(ctx context.Context, timeout time.Duration, topic string) 
 		cancel()
 	}()
 	message := partitionConn.Message(ctx)
+	if message == nil {
+		r.testing.Fatalf("consumer message is empty from %s", topic)
+		return nil
+	}
 	r.offsets.Set(topic, message.Offset+1)
 	return message
 }

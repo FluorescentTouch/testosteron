@@ -1,4 +1,4 @@
-package db
+package client
 
 import (
 	"context"
@@ -12,13 +12,34 @@ import (
 	migrate "github.com/rubenv/sql-migrate"
 )
 
-type ClientPg struct {
+const postgresDriver = "postgres"
+
+type Config struct {
+	Host     string
+	User     string
+	Port     int
+	DbName   string
+	Password string
+}
+
+func (c Config) String() string {
+	return fmt.Sprintf(
+		"host=%s user=%s port=%d dbname=%s password=%s sslmode=disable binary_parameters=yes",
+		c.Host,
+		c.User,
+		c.Port,
+		c.DbName,
+		c.Password,
+	)
+}
+
+type Client struct {
 	t    *testing.T
 	conn *sql.DB
 }
 
-func NewClientPg(ctx context.Context, t *testing.T, conf Config) (*ClientPg, error) {
-	client := &ClientPg{}
+func NewClientPg(ctx context.Context, t *testing.T, conf Config) (*Client, error) {
+	client := &Client{}
 
 	conn, err := client.newConnection(ctx, conf)
 	if err != nil {
@@ -38,15 +59,15 @@ func NewClientPg(ctx context.Context, t *testing.T, conf Config) (*ClientPg, err
 	return client, nil
 }
 
-func (p *ClientPg) cleanup() error {
-	err := p.conn.Close()
+func (c *Client) cleanup() error {
+	err := c.conn.Close()
 	if err != nil {
 		return fmt.Errorf("postgres connect close error: %w", err)
 	}
 	return nil
 }
 
-func (p *ClientPg) newConnection(ctx context.Context, conf Config) (*sql.DB, error) {
+func (c *Client) newConnection(ctx context.Context, conf Config) (*sql.DB, error) {
 	conn, err := sqlx.Open(postgresDriver, conf.String())
 	if err != nil {
 		return nil, fmt.Errorf("sql open error:; %w", err)
@@ -68,20 +89,20 @@ func (p *ClientPg) newConnection(ctx context.Context, conf Config) (*sql.DB, err
 	return conn.DB, nil
 }
 
-func (p *ClientPg) DB() *sql.DB {
-	return p.conn
+func (c *Client) DB() *sql.DB {
+	return c.conn
 }
 
-func (p *ClientPg) Migrate(migrateDir string) error {
+func (c *Client) Migrate(migrateDir string) error {
 	migrationsList := &migrate.FileMigrationSource{
 		Dir: migrateDir,
 	}
 
-	n, err := migrate.Exec(p.conn, postgresDriver, migrationsList, migrate.Up)
+	n, err := migrate.Exec(c.conn, postgresDriver, migrationsList, migrate.Up)
 	if err != nil {
 		return fmt.Errorf("pg migrate error: %w", err)
 	}
 
-	p.t.Log(fmt.Sprintf("Applied %d migrations. sourse: %s", n, migrationsList))
+	c.t.Logf("Applied %d migrations. sourse: %s", n, migrationsList)
 	return nil
 }

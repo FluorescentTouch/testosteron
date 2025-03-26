@@ -2,16 +2,47 @@ package steron
 
 import (
 	"context"
+	"fmt"
 	"testing"
 
-	"github.com/FluorescentTouch/testosteron/db"
-	"github.com/FluorescentTouch/testosteron/docker"
+	tc "github.com/testcontainers/testcontainers-go"
+
+	"github.com/FluorescentTouch/testosteron/postgres/client"
+	"github.com/FluorescentTouch/testosteron/postgres/docker"
 	"github.com/FluorescentTouch/testosteron/sync"
 )
 
+type PostgresService struct {
+	opts []tc.ContainerCustomizer
+}
+
+func NewPostgresService(opts ...tc.ContainerCustomizer) *PostgresService {
+	return &PostgresService{
+		opts: opts,
+	}
+}
+
+func (p *PostgresService) WithHelper(h *Helper) error {
+	database, err := docker.RunContainer(p.opts...)
+	if err != nil {
+		return fmt.Errorf("postgres init error: %w", err)
+	}
+	h.postgres.database = database
+	h.postgres.opts = p.opts
+	h.cfg.postgresConfig = DbConfig{
+		Host:     database.Host(),
+		Name:     database.Name(),
+		User:     database.User(),
+		Port:     database.Port(),
+		Password: database.Password(),
+	}
+	return nil
+}
+
 type PostgresHelper struct {
 	clients  sync.Map[DbClient]
-	database *docker.Postgres
+	opts     []tc.ContainerCustomizer
+	database *docker.PostgresContainer
 }
 
 func (p *PostgresHelper) Client(t *testing.T) DbClient {
@@ -21,7 +52,7 @@ func (p *PostgresHelper) Client(t *testing.T) DbClient {
 
 	database := p.database
 	if database == nil {
-		d, err := docker.NewPostgres()
+		d, err := docker.RunContainer(p.opts...)
 		if err != nil {
 			t.Errorf("new database error: %s", err)
 			return nil
@@ -36,7 +67,7 @@ func (p *PostgresHelper) Client(t *testing.T) DbClient {
 		database = d
 	}
 
-	conf := db.Config{
+	conf := client.Config{
 		Host:     database.Host(),
 		User:     database.User(),
 		Port:     database.Port(),
@@ -45,7 +76,7 @@ func (p *PostgresHelper) Client(t *testing.T) DbClient {
 	}
 
 	ctx := context.Background()
-	c, err := db.NewClientPg(ctx, t, conf)
+	c, err := client.NewClientPg(ctx, t, conf)
 	if err != nil {
 		t.Errorf("db new client error: %s", err)
 		return nil

@@ -3,6 +3,7 @@ package server
 import (
 	"net/http"
 	"net/http/httptest"
+	"strings"
 	"testing"
 
 	"github.com/go-chi/chi/v5"
@@ -47,6 +48,25 @@ func (s *HTTPServer) Cleanup() {
 	s.s.Close()
 }
 
+func (s *HTTPServer) NewDebugHandler(f http.HandlerFunc) func(comments ...string) {
+	mx := make(chan struct{})
+
+	s.HandleFunc("/next", func(w http.ResponseWriter, r *http.Request) {
+		f(w, r)
+
+		select {
+		case mx <- struct{}{}:
+		default:
+			return
+		}
+	})
+
+	return func(comments ...string) {
+		s.t.Logf("----- Go on %s/next to next breakpoint, %s\n", s.Addr(), strings.Join(comments, ","))
+		<-mx
+	}
+}
+
 // HTTPMainServer emulates http Server for TestMain.
 // Do not initialize manualy, use ServerMain(m) instead.
 type HTTPMainServer struct {
@@ -73,4 +93,23 @@ func (s *HTTPMainServer) Addr() string {
 
 func (s *HTTPMainServer) Cleanup() {
 	s.s.Close()
+}
+
+func (s *HTTPMainServer) NewDebugHandler(f http.HandlerFunc) func(comments ...string) {
+	mx := make(chan struct{})
+
+	s.HandleFunc("/next", func(w http.ResponseWriter, r *http.Request) {
+		f(w, r)
+
+		select {
+		case mx <- struct{}{}:
+		default:
+			return
+		}
+	})
+
+	return func(comments ...string) {
+		println("----- Go on", s.Addr(), "/next to next breakpoint", strings.Join(comments, ","))
+		<-mx
+	}
 }

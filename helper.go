@@ -1,12 +1,14 @@
 package steron
 
-import "github.com/FluorescentTouch/testosteron/sync"
+import (
+	"github.com/FluorescentTouch/testosteron/sync"
+)
 
 var helper *Helper
 
 func init() {
 	h := &Helper{
-		hyperText: &HTTPHelper{
+		http: &HTTPHelper{
 			clients: sync.MakeSyncMap[WebClient](),
 			servers: sync.MakeSyncMap[WebServer](),
 		},
@@ -16,6 +18,9 @@ func init() {
 		postgres: &PostgresHelper{
 			clients: sync.MakeSyncMap[DbClient](),
 		},
+		elasticSearch: &ElasticSearchHelper{
+			clients: sync.MakeSyncMap[ElasticSearchClient](),
+		},
 	}
 	helper = h
 }
@@ -23,14 +28,15 @@ func init() {
 type Helper struct {
 	cfg Config
 
-	hyperText *HTTPHelper
-	kafka     *KafkaHelper
-	postgres  *PostgresHelper
+	http          *HTTPHelper
+	kafka         *KafkaHelper
+	postgres      *PostgresHelper
+	elasticSearch *ElasticSearchHelper
 }
 
 func (h *Helper) cleanup() {
-	if h.hyperText.mainServer != nil {
-		h.hyperText.mainServer.Cleanup()
+	if h.http.mainServer != nil {
+		h.http.mainServer.Cleanup()
 	}
 	if h.kafka.broker != nil {
 		_ = h.kafka.broker.Cleanup()
@@ -41,7 +47,7 @@ func (h *Helper) cleanup() {
 }
 
 func (h *Helper) HTTP() *HTTPHelper {
-	return h.hyperText
+	return h.http
 }
 
 func (h *Helper) Kafka() *KafkaHelper {
@@ -50,4 +56,8 @@ func (h *Helper) Kafka() *KafkaHelper {
 
 func (h *Helper) Postgres() *PostgresHelper {
 	return h.postgres
+}
+
+func (h *Helper) ElasticSearch() *ElasticSearchHelper {
+	return h.elasticSearch
 }

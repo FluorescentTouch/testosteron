@@ -4,19 +4,18 @@ import (
 	"context"
 	"database/sql"
 	"flag"
-	"fmt"
 	"net/http"
 	"time"
 
 	"github.com/IBM/sarama"
-
-	"github.com/FluorescentTouch/testosteron/docker"
+	es "github.com/elastic/go-elasticsearch/v7"
 )
 
 type WebServer interface {
 	HandleFunc(pattern string, handler http.HandlerFunc)
 	Addr() string
 	Cleanup()
+	NewDebugHandler(handlerFunc http.HandlerFunc) func(...string)
 }
 
 type WebClient interface {
@@ -29,6 +28,10 @@ type KafkaClient interface {
 	Consume(ctx context.Context, timeout time.Duration, topic string) *sarama.ConsumerMessage
 	Produce(topic string, value []byte, h ...sarama.RecordHeader)
 	ProduceWithKey(topic string, key []byte, data []byte, headers ...sarama.RecordHeader)
+}
+
+type ElasticSearchClient interface {
+	Client() *es.Client
 }
 
 type DbClient interface {
@@ -47,6 +50,7 @@ type DbConfig struct {
 type Config struct {
 	postgresConfig DbConfig
 	kafkaBrokers   []string
+	esHost         string
 }
 
 func (c Config) KafkaBrokers() []string {
@@ -57,11 +61,15 @@ func (c Config) PgConfig() DbConfig {
 	return c.postgresConfig
 }
 
-func Init(options ...option) (Config, error) {
+func (c Config) ElasticSearchAddress() string {
+	return c.esHost
+}
+
+func Init(options ...Option) (Config, error) {
 	flag.Parse()
 
 	for _, o := range options {
-		err := o(helper)
+		err := o.WithHelper(helper)
 		if err != nil {
 			return Config{}, err
 		}
@@ -73,37 +81,13 @@ func Cleanup() {
 	helper.cleanup()
 }
 
-func AddKafka(h *Helper) error {
-	broker, err := docker.NewKafka()
-	if err != nil {
-		return fmt.Errorf("kafka init error: %w", err)
-	}
-	h.kafka.broker = broker
-	h.cfg.kafkaBrokers = broker.Brokers()
-	return nil
-}
-
-func AddPostgres(h *Helper) error {
-	database, err := docker.NewPostgres()
-	if err != nil {
-		return fmt.Errorf("postgres init error: %w", err)
-	}
-	h.postgres.database = database
-	h.cfg.postgresConfig = DbConfig{
-		Host:     database.Host(),
-		Name:     database.Name(),
-		User:     database.User(),
-		Port:     database.Port(),
-		Password: database.Password(),
-	}
-	return nil
-}
-
 func HTTP() *HTTPHelper {
 	return helper.HTTP()
 }
 
-type option func(*Helper) error
+type Option interface {
+	WithHelper(*Helper) error
+}
 
 func Kafka() *KafkaHelper {
 	return helper.Kafka()
@@ -111,4 +95,8 @@ func Kafka() *KafkaHelper {
 
 func Postgres() *PostgresHelper {
 	return helper.Postgres()
+}
+
+func ElasticSearch() *ElasticSearchHelper {
+	return helper.ElasticSearch()
 }

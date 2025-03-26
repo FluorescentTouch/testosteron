@@ -1,17 +1,40 @@
 package steron
 
 import (
+	"fmt"
 	"testing"
 
-	"github.com/FluorescentTouch/testosteron/docker"
-	"github.com/FluorescentTouch/testosteron/kafka"
+	"github.com/FluorescentTouch/testosteron/kafka/client"
+	"github.com/FluorescentTouch/testosteron/kafka/docker"
 	"github.com/FluorescentTouch/testosteron/sync"
+	tc "github.com/testcontainers/testcontainers-go"
 )
+
+type KafkaService struct {
+	opts []tc.ContainerCustomizer
+}
+
+func NewKafkaService(opts ...tc.ContainerCustomizer) *KafkaService {
+	return &KafkaService{
+		opts: opts,
+	}
+}
+
+func (k *KafkaService) WithHelper(h *Helper) error {
+	broker, err := docker.RunContainer(k.opts...)
+	if err != nil {
+		return fmt.Errorf("kafka init error: %w", err)
+	}
+	h.kafka.broker = broker
+	h.kafka.opts = k.opts
+	h.cfg.kafkaBrokers = broker.Brokers()
+	return nil
+}
 
 type KafkaHelper struct {
 	clients sync.Map[KafkaClient] // t.Name:Client
-
-	broker *docker.Kafka
+	opts    []tc.ContainerCustomizer
+	broker  *docker.KafkaContainer
 }
 
 func (h *KafkaHelper) Client(t *testing.T) KafkaClient {
@@ -23,7 +46,7 @@ func (h *KafkaHelper) Client(t *testing.T) KafkaClient {
 
 	// init kafka for single test if not initialized globally
 	if broker == nil {
-		b, err := docker.NewKafka()
+		b, err := docker.RunContainer(h.opts...)
 		if err != nil {
 			t.Errorf("new broker err: %s", err)
 			return nil
@@ -39,7 +62,7 @@ func (h *KafkaHelper) Client(t *testing.T) KafkaClient {
 		broker = b
 	}
 
-	c := kafka.NewClient(t, broker.Brokers())
+	c := client.NewClient(t, broker.Brokers())
 	h.clients.Set(t.Name(), c)
 
 	t.Cleanup(func() {

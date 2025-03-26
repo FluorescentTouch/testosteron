@@ -1,6 +1,7 @@
 package steron
 
 import (
+	"os"
 	"testing"
 
 	"github.com/FluorescentTouch/testosteron/http/client"
@@ -31,7 +32,7 @@ func (h *HTTPHelper) Client(t *testing.T) WebClient {
 	return c
 }
 
-func (h *HTTPHelper) Server(t *testing.T) WebServer {
+func (h *HTTPHelper) Server(t *testing.T, envs ...string) WebServer {
 	if s, ok := h.servers.Get(t.Name()); ok {
 		return s
 	}
@@ -44,10 +45,18 @@ func (h *HTTPHelper) Server(t *testing.T) WebServer {
 		h.servers.Delete(t.Name())
 	})
 
+	for _, env := range envs {
+		_ = os.Setenv(env, s.Addr())
+	}
+
 	return s
 }
 
-func (h *HTTPHelper) ServerMain(m *testing.M) WebServer {
+func (h *HTTPHelper) ServerMain(m *testing.M, envs ...string) WebServer {
 	h.mainServer = server.NewHTTPMainServer(m)
+
+	for _, env := range envs {
+		_ = os.Setenv(env, h.mainServer.Addr())
+	}
 	return h.mainServer
 }
