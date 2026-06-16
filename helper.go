@@ -1,8 +1,6 @@
 package steron
 
-import (
-	"github.com/FluorescentTouch/testosteron/sync"
-)
+import "github.com/FluorescentTouch/testosteron/v2/sync"
 
 var helper *Helper
 
@@ -32,6 +30,7 @@ type Helper struct {
 	kafka         *KafkaHelper
 	postgres      *PostgresHelper
 	elasticSearch *ElasticSearchHelper
+	redis         *RedisHelper
 }
 
 func (h *Helper) cleanup() {

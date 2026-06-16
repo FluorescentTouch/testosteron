@@ -7,7 +7,7 @@ import (
 
 	"github.com/IBM/sarama"
 
-	"github.com/FluorescentTouch/testosteron/sync"
+	"github.com/FluorescentTouch/testosteron/v2/sync"
 )
 
 type Message struct {

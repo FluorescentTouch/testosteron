@@ -9,6 +9,7 @@ import (
 
 	"github.com/IBM/sarama"
 	es "github.com/elastic/go-elasticsearch/v7"
+	"github.com/redis/go-redis/v9"
 )
 
 type WebServer interface {
@@ -28,6 +29,11 @@ type KafkaClient interface {
 	Consume(ctx context.Context, timeout time.Duration, topic string) *sarama.ConsumerMessage
 	Produce(topic string, value []byte, h ...sarama.RecordHeader)
 	ProduceWithKey(topic string, key []byte, data []byte, headers ...sarama.RecordHeader)
+	CreateTopic(name string, detail *sarama.TopicDetail, validateOnly bool)
+}
+
+type RedisClient interface {
+	Client() redis.UniversalClient
 }
 
 type ElasticSearchClient interface {

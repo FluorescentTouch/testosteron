@@ -7,7 +7,8 @@ import (
 	"testing"
 	"time"
 
-	steron "github.com/FluorescentTouch/testosteron"
+	steron "github.com/FluorescentTouch/testosteron/v2"
+	"github.com/IBM/sarama"
 )
 
 func kafkaClient(t *testing.T) steron.KafkaClient {
@@ -29,6 +30,7 @@ func TestCheckEnv(t *testing.T) {
 	defer cancel()
 
 	kc := kafkaClient(t)
+	kc.CreateTopic("test.topic", &sarama.TopicDetail{NumPartitions: 1, ReplicationFactor: 1}, false)
 
 	kc.Produce("test.topic", []byte(`{"key":"vaule"}`))
 

@@ -14,7 +14,7 @@ import (
 	"strings"
 	"testing"
 
-	steron "github.com/FluorescentTouch/testosteron"
+	steron "github.com/FluorescentTouch/testosteron/v2"
 )
 
 func TestMain(m *testing.M) {

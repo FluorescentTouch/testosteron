@@ -6,6 +6,7 @@ import (
 	"strconv"
 	"time"
 
+	"github.com/moby/moby/api/types/network"
 	tc "github.com/testcontainers/testcontainers-go"
 )
 
@@ -98,9 +99,14 @@ func getAddress(ctx context.Context, container tc.Container) (string, error) {
 		return "", fmt.Errorf("postgres get port error: %w", err)
 	}
 
+	dp, err := network.ParsePort(defaultPort)
+	if err != nil {
+		return "", err
+	}
+
 	var hostPost string
-	if len(ports[defaultPort]) > 0 {
-		hostPost = ports[defaultPort][0].HostPort
+	if len(ports[dp]) > 0 {
+		hostPost = ports[dp][0].HostPort
 	}
 
 	port, err := strconv.Atoi(hostPost)
@@ -112,46 +118,61 @@ func getAddress(ctx context.Context, container tc.Container) (string, error) {
 }
 
 func WithEnv(env map[string]string) tc.CustomizeRequestOption {
-	return func(req *tc.GenericContainerRequest) {
+	return func(req *tc.GenericContainerRequest) error {
 		req.Env = env
+
+		return nil
 	}
 }
 
 func WithEnvValue(key, value string) tc.CustomizeRequestOption {
-	return func(req *tc.GenericContainerRequest) {
+	return func(req *tc.GenericContainerRequest) error {
 		req.Env[key] = value
+
+		return nil
 	}
 }
 
 func WithImage(image string) tc.CustomizeRequestOption {
-	return func(req *tc.GenericContainerRequest) {
+	return func(req *tc.GenericContainerRequest) error {
 		if len(image) == 0 {
-			return
+			return nil
 		}
+
 		req.Image = image
+
+		return nil
 	}
 }
 
 func WithExposedPorts(ports []string) tc.CustomizeRequestOption {
-	return func(req *tc.GenericContainerRequest) {
+	return func(req *tc.GenericContainerRequest) error {
 		req.ExposedPorts = ports
+
+		return nil
 	}
 }
 
 func WithEntrypoint(entrypoint []string) tc.CustomizeRequestOption {
-	return func(req *tc.GenericContainerRequest) {
+	return func(req *tc.GenericContainerRequest) error {
 		req.Entrypoint = entrypoint
+
+		return nil
 	}
 }
 
 func WithCmd(cmd []string) tc.CustomizeRequestOption {
-	return func(req *tc.GenericContainerRequest) {
+	return func(req *tc.GenericContainerRequest) error {
 		req.Cmd = cmd
+
+		return nil
 	}
 }
 
 func WithLifecycleHooks(lifecycleHooks []tc.ContainerLifecycleHooks) tc.CustomizeRequestOption {
-	return func(req *tc.GenericContainerRequest) {
+	return func(req *tc.GenericContainerRequest) error {
 		req.LifecycleHooks = lifecycleHooks
+
+		return nil
 	}
 }

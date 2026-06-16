@@ -4,9 +4,9 @@ import (
 	"fmt"
 	"testing"
 
-	"github.com/FluorescentTouch/testosteron/kafka/client"
-	"github.com/FluorescentTouch/testosteron/kafka/docker"
-	"github.com/FluorescentTouch/testosteron/sync"
+	"github.com/FluorescentTouch/testosteron/v2/kafka/client"
+	"github.com/FluorescentTouch/testosteron/v2/kafka/docker"
+	"github.com/FluorescentTouch/testosteron/v2/sync"
 	tc "github.com/testcontainers/testcontainers-go"
 )
 

@@ -7,8 +7,8 @@ import (
 	"strings"
 	"testing"
 
-	steron "github.com/FluorescentTouch/testosteron"
-	"github.com/FluorescentTouch/testosteron/elastic/docker"
+	steron "github.com/FluorescentTouch/testosteron/v2"
+	"github.com/FluorescentTouch/testosteron/v2/elastic/docker"
 )
 
 func TestMain(m *testing.M) {

@@ -7,9 +7,9 @@ import (
 
 	tc "github.com/testcontainers/testcontainers-go"
 
-	"github.com/FluorescentTouch/testosteron/postgres/client"
-	"github.com/FluorescentTouch/testosteron/postgres/docker"
-	"github.com/FluorescentTouch/testosteron/sync"
+	"github.com/FluorescentTouch/testosteron/v2/postgres/client"
+	"github.com/FluorescentTouch/testosteron/v2/postgres/docker"
+	"github.com/FluorescentTouch/testosteron/v2/sync"
 )
 
 type PostgresService struct {

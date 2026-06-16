@@ -4,9 +4,9 @@ import (
 	"fmt"
 	"testing"
 
-	"github.com/FluorescentTouch/testosteron/elastic/client"
-	"github.com/FluorescentTouch/testosteron/elastic/docker"
-	"github.com/FluorescentTouch/testosteron/sync"
+	"github.com/FluorescentTouch/testosteron/v2/elastic/client"
+	"github.com/FluorescentTouch/testosteron/v2/elastic/docker"
+	"github.com/FluorescentTouch/testosteron/v2/sync"
 	tc "github.com/testcontainers/testcontainers-go"
 )
 

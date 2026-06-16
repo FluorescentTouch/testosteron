@@ -4,9 +4,9 @@ import (
 	"os"
 	"testing"
 
-	"github.com/FluorescentTouch/testosteron/http/client"
-	"github.com/FluorescentTouch/testosteron/http/server"
-	"github.com/FluorescentTouch/testosteron/sync"
+	"github.com/FluorescentTouch/testosteron/v2/http/client"
+	"github.com/FluorescentTouch/testosteron/v2/http/server"
+	"github.com/FluorescentTouch/testosteron/v2/sync"
 )
 
 type HTTPHelper struct {

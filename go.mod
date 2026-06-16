@@ -1,19 +1,21 @@
-module github.com/FluorescentTouch/testosteron
+module github.com/FluorescentTouch/testosteron/v2
 
 go 1.25.0
 
 require (
 	github.com/IBM/sarama v1.50.1
-	github.com/docker/go-connections v0.7.0
 	github.com/elastic/go-elasticsearch/v7 v7.17.10
 	github.com/go-chi/chi/v5 v5.3.0
 	github.com/jmoiron/sqlx v1.4.0
 	github.com/json-iterator/go v1.1.12
 	github.com/lib/pq v1.12.3
+	github.com/moby/moby/api v1.54.1
 	github.com/olivere/randport v0.0.0-20160812213456-b511dd6722ef
+	github.com/redis/go-redis/v9 v9.20.1
 	github.com/rubenv/sql-migrate v1.8.1
 	github.com/testcontainers/testcontainers-go v0.42.0
-	golang.org/x/mod v0.36.0
+	github.com/testcontainers/testcontainers-go/modules/redis v0.42.0
+	github.com/testcontainers/testcontainers-go/modules/redpanda v0.42.0
 )
 
 require (
@@ -29,6 +31,7 @@ require (
 	github.com/cpuguy83/dockercfg v0.3.2 // indirect
 	github.com/davecgh/go-spew v1.1.1 // indirect
 	github.com/distribution/reference v0.6.0 // indirect
+	github.com/docker/go-connections v0.7.0 // indirect
 	github.com/docker/go-units v0.5.0 // indirect
 	github.com/eapache/go-resiliency v1.7.0 // indirect
 	github.com/ebitengine/purego v0.10.0 // indirect
@@ -47,9 +50,9 @@ require (
 	github.com/klauspost/compress v1.18.6 // indirect
 	github.com/lufia/plan9stats v0.0.0-20211012122336-39d0f177ccd0 // indirect
 	github.com/magiconair/properties v1.8.10 // indirect
+	github.com/mdelapenya/tlscert v0.2.0 // indirect
 	github.com/moby/docker-image-spec v1.3.1 // indirect
 	github.com/moby/go-archive v0.2.0 // indirect
-	github.com/moby/moby/api v1.54.1 // indirect
 	github.com/moby/moby/client v0.4.0 // indirect
 	github.com/moby/patternmatcher v0.6.1 // indirect
 	github.com/moby/sys/sequential v0.6.0 // indirect
@@ -75,7 +78,9 @@ require (
 	go.opentelemetry.io/otel v1.41.0 // indirect
 	go.opentelemetry.io/otel/metric v1.41.0 // indirect
 	go.opentelemetry.io/otel/trace v1.41.0 // indirect
+	go.uber.org/atomic v1.11.0 // indirect
 	golang.org/x/crypto v0.52.0 // indirect
+	golang.org/x/mod v0.36.0 // indirect
 	golang.org/x/net v0.55.0 // indirect
 	golang.org/x/sys v0.45.0 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect

@@ -9,8 +9,8 @@ import (
 
 	"github.com/IBM/sarama"
 
-	"github.com/FluorescentTouch/testosteron/kafka/producer"
-	"github.com/FluorescentTouch/testosteron/kafka/reader"
+	"github.com/FluorescentTouch/testosteron/v2/kafka/producer"
+	"github.com/FluorescentTouch/testosteron/v2/kafka/reader"
 )
 
 type syncProducer interface {
@@ -74,6 +74,13 @@ func NewClient(t *testing.T, addr []string) *Client {
 	})
 
 	return client
+}
+
+func (c *Client) CreateTopic(name string, detail *sarama.TopicDetail, validateOnly bool) {
+	err := c.admin.CreateTopic(name, detail, validateOnly)
+	if err != nil {
+		c.t.Errorf("KafkaClient create topic error: %s", err)
+	}
 }
 
 func (c *Client) Consume(ctx context.Context, timeout time.Duration, topic string) *sarama.ConsumerMessage {

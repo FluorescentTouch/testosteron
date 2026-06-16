@@ -9,7 +9,7 @@ import (
 	"testing"
 	"time"
 
-	steron "github.com/FluorescentTouch/testosteron"
+	steron "github.com/FluorescentTouch/testosteron/v2"
 )
 
 func TestMain(m *testing.M) {
