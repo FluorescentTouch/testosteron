@@ -9,6 +9,7 @@ import (
 
 	"github.com/IBM/sarama"
 	es "github.com/elastic/go-elasticsearch/v7"
+	"github.com/minio/minio-go/v7"
 	"github.com/redis/go-redis/v9"
 )
 
@@ -36,6 +37,10 @@ type RedisClient interface {
 	Client() redis.UniversalClient
 }
 
+type MinioClient interface {
+	Client() minio.Client
+}
+
 type ElasticSearchClient interface {
 	Client() *es.Client
 }
@@ -46,10 +51,17 @@ type DbClient interface {
 }
 
 type DbConfig struct {
+	Host       string
+	Name       string
+	User       string
+	Port       int
+	Password   string
+	Connection string
+}
+
+type MinioConfig struct {
 	Host     string
-	Name     string
 	User     string
-	Port     int
 	Password string
 }
 
@@ -57,6 +69,8 @@ type Config struct {
 	postgresConfig DbConfig
 	kafkaBrokers   []string
 	esHost         string
+	redsHost       string
+	minioConfig    MinioConfig
 }
 
 func (c Config) KafkaBrokers() []string {
@@ -69,6 +83,14 @@ func (c Config) PgConfig() DbConfig {
 
 func (c Config) ElasticSearchAddress() string {
 	return c.esHost
+}
+
+func (c Config) MinioConfig() MinioConfig {
+	return c.minioConfig
+}
+
+func (c Config) RedisHost() string {
+	return c.redsHost
 }
 
 func Init(options ...Option) (Config, error) {
@@ -105,4 +127,12 @@ func Postgres() *PostgresHelper {
 
 func ElasticSearch() *ElasticSearchHelper {
 	return helper.ElasticSearch()
+}
+
+func Redis() *RedisHelper {
+	return helper.Redis()
+}
+
+func Minio() *MinioHelper {
+	return helper.Minio()
 }

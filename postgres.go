@@ -13,28 +13,31 @@ import (
 )
 
 type PostgresService struct {
-	opts []tc.ContainerCustomizer
+	opts  []tc.ContainerCustomizer
+	image string
 }
 
-func NewPostgresService(opts ...tc.ContainerCustomizer) *PostgresService {
+func NewPostgresService(image string, opts ...tc.ContainerCustomizer) *PostgresService {
 	return &PostgresService{
-		opts: opts,
+		opts:  opts,
+		image: image,
 	}
 }
 
 func (p *PostgresService) WithHelper(h *Helper) error {
-	database, err := docker.RunContainer(p.opts...)
+	database, err := docker.RunContainer(p.image, p.opts...)
 	if err != nil {
 		return fmt.Errorf("postgres init error: %w", err)
 	}
 	h.postgres.database = database
 	h.postgres.opts = p.opts
 	h.cfg.postgresConfig = DbConfig{
-		Host:     database.Host(),
-		Name:     database.Name(),
-		User:     database.User(),
-		Port:     database.Port(),
-		Password: database.Password(),
+		Host:       database.Host(),
+		Name:       database.Name(),
+		User:       database.User(),
+		Port:       database.Port(),
+		Password:   database.Password(),
+		Connection: database.Connection(),
 	}
 	return nil
 }
@@ -43,6 +46,7 @@ type PostgresHelper struct {
 	clients  sync.Map[DbClient]
 	opts     []tc.ContainerCustomizer
 	database *docker.PostgresContainer
+	image    string
 }
 
 func (p *PostgresHelper) Client(t *testing.T) DbClient {
@@ -52,7 +56,7 @@ func (p *PostgresHelper) Client(t *testing.T) DbClient {
 
 	database := p.database
 	if database == nil {
-		d, err := docker.RunContainer(p.opts...)
+		d, err := docker.RunContainer(p.image, p.opts...)
 		if err != nil {
 			t.Errorf("new database error: %s", err)
 			return nil

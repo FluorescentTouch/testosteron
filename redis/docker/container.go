@@ -8,8 +8,6 @@ import (
 	"github.com/testcontainers/testcontainers-go/modules/redis"
 )
 
-const dockerImage = "redis:7.4-alpine"
-
 type RedisContainer struct {
 	tc.Container
 
@@ -20,10 +18,10 @@ func (c *RedisContainer) Cleanup() error {
 	return c.Terminate(context.Background())
 }
 
-func RunContainer(opts ...tc.ContainerCustomizer) (*RedisContainer, error) {
+func RunContainer(image string, opts ...tc.ContainerCustomizer) (*RedisContainer, error) {
 	ctx := context.Background()
 
-	container, err := redis.Run(ctx, dockerImage, opts...)
+	container, err := redis.Run(ctx, image, opts...)
 	if err != nil {
 		return nil, err
 	}

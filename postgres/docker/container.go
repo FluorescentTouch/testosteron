@@ -3,30 +3,28 @@ package docker
 import (
 	"context"
 	"fmt"
-	"path/filepath"
 	"strconv"
 	"time"
 
 	"github.com/moby/moby/api/types/network"
 	tc "github.com/testcontainers/testcontainers-go"
+	"github.com/testcontainers/testcontainers-go/modules/postgres"
 )
 
 const (
-	defaultUser          = "db_user"
-	defaultPassword      = "db_password"
-	defaultPostgresImage = "postgres:15-alpine"
-	defaultName          = "steron"
-	dbPort               = "5432/tcp"
+	defaultName = "postgres"
+	dbPort      = "5432/tcp"
 )
 
 type PostgresContainer struct {
 	tc.Container
-	ctx      context.Context
-	dbName   string
-	user     string
-	password string
-	host     string
-	port     int
+	ctx        context.Context
+	dbName     string
+	user       string
+	password   string
+	host       string
+	port       int
+	connection string
 }
 
 func (p *PostgresContainer) Host() string {
@@ -49,160 +47,31 @@ func (p *PostgresContainer) Password() string {
 	return p.password
 }
 
+func (p *PostgresContainer) Connection() string {
+	return p.connection
+}
+
 func (p *PostgresContainer) Cleanup() error {
-	return p.Terminate(p.ctx)
+	return p.Terminate(context.Background())
 }
 
-func WithConfigFile(cfg string) tc.CustomizeRequestOption {
-	return func(req *tc.GenericContainerRequest) error {
-		cfgFile := tc.ContainerFile{
-			HostFilePath:      cfg,
-			ContainerFilePath: "/etc/postgresql.conf",
-			FileMode:          0o755,
-		}
-
-		req.Files = append(req.Files, cfgFile)
-		req.Cmd = append(req.Cmd, "-c", "config_file=/etc/postgresql.conf")
-
-		return nil
-	}
-}
-
-func WithDatabase(dbName string) tc.CustomizeRequestOption {
-	return func(req *tc.GenericContainerRequest) error {
-		req.Env["POSTGRES_DB"] = dbName
-
-		return nil
-	}
-}
-
-func WithInitScripts(scripts ...string) tc.CustomizeRequestOption {
-	return func(req *tc.GenericContainerRequest) error {
-		initScripts := make([]tc.ContainerFile, 0)
-		for _, script := range scripts {
-			cf := tc.ContainerFile{
-				HostFilePath:      script,
-				ContainerFilePath: "/docker-entrypoint-initdb.d/" + filepath.Base(script),
-				FileMode:          0o755,
-			}
-			initScripts = append(initScripts, cf)
-		}
-		req.Files = append(req.Files, initScripts...)
-
-		return nil
-	}
-}
-
-func WithPassword(password string) tc.CustomizeRequestOption {
-	return func(req *tc.GenericContainerRequest) error {
-		req.Env["POSTGRES_PASSWORD"] = password
-
-		return nil
-	}
-}
-
-func WithUsername(user string) tc.CustomizeRequestOption {
-	return func(req *tc.GenericContainerRequest) error {
-		if user == "" {
-			user = defaultUser
-		}
-
-		req.Env["POSTGRES_USER"] = user
-
-		return nil
-	}
-}
-
-func WithEnv(env map[string]string) tc.CustomizeRequestOption {
-	return func(req *tc.GenericContainerRequest) error {
-		req.Env = env
-
-		return nil
-	}
-}
-
-func WithEnvValue(key, value string) tc.CustomizeRequestOption {
-	return func(req *tc.GenericContainerRequest) error {
-		req.Env[key] = value
-
-		return nil
-	}
-}
-
-func WithImage(image string) tc.CustomizeRequestOption {
-	return func(req *tc.GenericContainerRequest) error {
-		if len(image) == 0 {
-			return nil
-		}
-
-		req.Image = image
-
-		return nil
-	}
-}
-
-func WithExposedPorts(ports []string) tc.CustomizeRequestOption {
-	return func(req *tc.GenericContainerRequest) error {
-		req.ExposedPorts = ports
-
-		return nil
-	}
-}
-
-func WithEntrypoint(entrypoint []string) tc.CustomizeRequestOption {
-	return func(req *tc.GenericContainerRequest) error {
-		req.Entrypoint = entrypoint
-
-		return nil
-	}
-}
-
-func WithCmd(cmd []string) tc.CustomizeRequestOption {
-	return func(req *tc.GenericContainerRequest) error {
-		req.Cmd = cmd
-
-		return nil
-	}
-}
-
-func WithLifecycleHooks(lifecycleHooks []tc.ContainerLifecycleHooks) tc.CustomizeRequestOption {
-	return func(req *tc.GenericContainerRequest) error {
-		req.LifecycleHooks = lifecycleHooks
-
-		return nil
-	}
-}
-
-func RunContainer(opts ...tc.ContainerCustomizer) (*PostgresContainer, error) {
+func RunContainer(image string, opts ...tc.ContainerCustomizer) (*PostgresContainer, error) {
 	ctx := context.Background()
-	req := tc.ContainerRequest{
-		Image: defaultPostgresImage,
-		Env: map[string]string{
-			"POSTGRES_USER":     defaultUser,
-			"POSTGRES_PASSWORD": defaultPassword,
-			"POSTGRES_DB":       defaultName,
+
+	opts = append(
+		[]tc.ContainerCustomizer{
+			postgres.WithDatabase(defaultName),
+			postgres.WithUsername(defaultName),
+			postgres.WithPassword(defaultName),
+			postgres.BasicWaitStrategies(),
 		},
-		ExposedPorts: []string{dbPort},
-		Cmd:          []string{"postgres", "-c", "fsync=off"},
-	}
+		opts...,
+	)
 
-	genericContainerReq := tc.GenericContainerRequest{
-		ContainerRequest: req,
-		Started:          true,
-	}
-
-	for _, opt := range opts {
-		_ = opt.Customize(&genericContainerReq)
-	}
-
-	container, err := tc.GenericContainer(ctx, genericContainerReq)
+	container, err := postgres.Run(ctx, image, opts...)
 	if err != nil {
 		return nil, err
 	}
-
-	user := req.Env["POSTGRES_USER"]
-	password := req.Env["POSTGRES_PASSWORD"]
-	dbName := req.Env["POSTGRES_DB"]
 
 	pc := new(PostgresContainer)
 	for i := 0; i < 3; i++ {
@@ -216,13 +85,19 @@ func RunContainer(opts ...tc.ContainerCustomizer) (*PostgresContainer, error) {
 		return nil, err
 	}
 
+	cs, err := container.ConnectionString(ctx)
+	if err != nil {
+		return nil, err
+	}
+
 	pg := &PostgresContainer{
-		Container: container,
-		dbName:    dbName,
-		password:  password,
-		user:      user,
-		host:      pc.host,
-		port:      pc.port,
+		Container:  container,
+		host:       pc.host,
+		port:       pc.port,
+		dbName:     pc.dbName,
+		user:       pc.user,
+		password:   pc.password,
+		connection: cs,
 	}
 
 	return pg, nil

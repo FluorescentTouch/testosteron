@@ -19,6 +19,12 @@ func init() {
 		elasticSearch: &ElasticSearchHelper{
 			clients: sync.MakeSyncMap[ElasticSearchClient](),
 		},
+		redis: &RedisHelper{
+			clients: sync.MakeSyncMap[RedisClient](),
+		},
+		minio: &MinioHelper{
+			clients: sync.MakeSyncMap[MinioClient](),
+		},
 	}
 	helper = h
 }
@@ -31,6 +37,7 @@ type Helper struct {
 	postgres      *PostgresHelper
 	elasticSearch *ElasticSearchHelper
 	redis         *RedisHelper
+	minio         *MinioHelper
 }
 
 func (h *Helper) cleanup() {
@@ -59,4 +66,12 @@ func (h *Helper) Postgres() *PostgresHelper {
 
 func (h *Helper) ElasticSearch() *ElasticSearchHelper {
 	return h.elasticSearch
+}
+
+func (h *Helper) Redis() *RedisHelper {
+	return h.redis
+}
+
+func (h *Helper) Minio() *MinioHelper {
+	return h.minio
 }

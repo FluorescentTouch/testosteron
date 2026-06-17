@@ -11,23 +11,25 @@ import (
 )
 
 type RedisService struct {
-	opts []tc.ContainerCustomizer
+	opts  []tc.ContainerCustomizer
+	image string
 }
 
-func NewRedisService(opts ...tc.ContainerCustomizer) *RedisService {
+func NewRedisService(image string, opts ...tc.ContainerCustomizer) *RedisService {
 	return &RedisService{
-		opts: opts,
+		opts:  opts,
+		image: image,
 	}
 }
 
 func (k *RedisService) WithHelper(h *Helper) error {
-	rs, err := docker.RunContainer(k.opts...)
+	rs, err := docker.RunContainer(k.image, k.opts...)
 	if err != nil {
 		return fmt.Errorf("Redis init error: %w", err)
 	}
-	h.Redis.client = rs
-	h.Redis.opts = k.opts
-	h.cfg.RedisBrokers = broker.Brokers()
+	h.redis.redis = rs
+	h.redis.opts = k.opts
+	h.redis.image = k.image
 	return nil
 }
 
@@ -35,6 +37,7 @@ type RedisHelper struct {
 	clients sync.Map[RedisClient] // t.Name:Client
 	opts    []tc.ContainerCustomizer
 	redis   *docker.RedisContainer
+	image   string
 }
 
 func (h *RedisHelper) Client(t *testing.T) RedisClient {
@@ -46,7 +49,7 @@ func (h *RedisHelper) Client(t *testing.T) RedisClient {
 
 	// init Redis for single test if not initialized globally
 	if rs == nil {
-		b, err := docker.RunContainer(h.opts...)
+		b, err := docker.RunContainer(h.image, h.opts...)
 		if err != nil {
 			t.Errorf("new broker err: %s", err)
 			return nil
