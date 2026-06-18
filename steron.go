@@ -69,7 +69,7 @@ type Config struct {
 	postgresConfig DbConfig
 	kafkaBrokers   []string
 	esHost         string
-	redsHost       string
+	redis          redis.Options
 	minioConfig    MinioConfig
 }
 
@@ -89,8 +89,8 @@ func (c Config) MinioConfig() MinioConfig {
 	return c.minioConfig
 }
 
-func (c Config) RedisHost() string {
-	return c.redsHost
+func (c Config) Redis() redis.Options {
+	return c.redis
 }
 
 func Init(options ...Option) (Config, error) {

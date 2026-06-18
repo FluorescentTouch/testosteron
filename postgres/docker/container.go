@@ -3,10 +3,9 @@ package docker
 import (
 	"context"
 	"fmt"
+	"regexp"
 	"strconv"
-	"time"
 
-	"github.com/moby/moby/api/types/network"
 	tc "github.com/testcontainers/testcontainers-go"
 	"github.com/testcontainers/testcontainers-go/modules/postgres"
 )
@@ -16,35 +15,63 @@ const (
 	dbPort      = "5432/tcp"
 )
 
+var connRx, _ = regexp.Compile(`^postgres:\/\/(\w+):(\w+)@(\w+):(\d+)\/(\w+)\?(.+)?$`)
+
+type connConfig struct {
+	dbName   string
+	user     string
+	password string
+	host     string
+	port     int
+}
+
+func newConnConfig(conn string) (c connConfig, err error) {
+	res := connRx.FindStringSubmatch(conn)
+	if len(res) != 7 {
+		err = fmt.Errorf("wrong connection regex result")
+	}
+
+	port, err := strconv.Atoi(res[4])
+	if err != nil {
+		return
+	}
+
+	c = connConfig{
+		dbName:   res[5],
+		user:     res[1],
+		password: res[2],
+		host:     res[3],
+		port:     port,
+	}
+
+	return
+}
+
 type PostgresContainer struct {
 	tc.Container
 	ctx        context.Context
-	dbName     string
-	user       string
-	password   string
-	host       string
-	port       int
+	conf       connConfig
 	connection string
 }
 
 func (p *PostgresContainer) Host() string {
-	return p.host
+	return p.conf.host
 }
 
 func (p *PostgresContainer) Name() string {
-	return p.dbName
+	return p.conf.dbName
 }
 
 func (p *PostgresContainer) User() string {
-	return p.user
+	return p.conf.user
 }
 
 func (p *PostgresContainer) Port() int {
-	return p.port
+	return p.conf.port
 }
 
 func (p *PostgresContainer) Password() string {
-	return p.password
+	return p.conf.password
 }
 
 func (p *PostgresContainer) Connection() string {
@@ -73,64 +100,20 @@ func RunContainer(image string, opts ...tc.ContainerCustomizer) (*PostgresContai
 		return nil, err
 	}
 
-	pc := new(PostgresContainer)
-	for i := 0; i < 3; i++ {
-		pc, err = getPorts(ctx, container)
-		if err == nil {
-			break
-		}
-		time.Sleep(time.Millisecond * 50)
-	}
+	cs, err := container.ConnectionString(ctx)
 	if err != nil {
 		return nil, err
 	}
 
-	cs, err := container.ConnectionString(ctx)
+	conf, err := newConnConfig(cs)
 	if err != nil {
 		return nil, err
 	}
 
 	pg := &PostgresContainer{
 		Container:  container,
-		host:       pc.host,
-		port:       pc.port,
-		dbName:     pc.dbName,
-		user:       pc.user,
-		password:   pc.password,
+		conf:       conf,
 		connection: cs,
-	}
-
-	return pg, nil
-}
-
-func getPorts(ctx context.Context, container tc.Container) (*PostgresContainer, error) {
-	host, err := container.Host(ctx)
-	if err != nil {
-		return nil, fmt.Errorf("postgres get host error: %w", err)
-	}
-	ports, err := container.Ports(ctx)
-	if err != nil {
-		return nil, fmt.Errorf("postgres get port error: %w", err)
-	}
-
-	dp, err := network.ParsePort(dbPort)
-	if err != nil {
-		return nil, err
-	}
-
-	var hostPost string
-	if len(ports[dp]) > 0 {
-		hostPost = ports[dp][0].HostPort
-	}
-
-	port, err := strconv.Atoi(hostPost)
-	if err != nil {
-		return nil, fmt.Errorf("port '%s' parse error: %w", hostPost, err)
-	}
-
-	pg := &PostgresContainer{
-		host: host,
-		port: port,
 	}
 
 	return pg, nil

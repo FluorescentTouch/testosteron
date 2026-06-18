@@ -30,6 +30,7 @@ func (k *RedisService) WithHelper(h *Helper) error {
 	h.redis.redis = rs
 	h.redis.opts = k.opts
 	h.redis.image = k.image
+	h.cfg.redis = rs.Options()
 	return nil
 }
 
