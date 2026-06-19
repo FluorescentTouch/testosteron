@@ -17,6 +17,9 @@ type WebServer interface {
 	HandleFunc(pattern string, handler http.HandlerFunc)
 	Addr() string
 	Cleanup()
+
+	// NewDebugHandler - инструмент дебага с безопасной остановкой
+	// пример - next := srv.NewDebugHandler(steron.EnvDebugHandler("env_prefix_")); next()
 	NewDebugHandler(handlerFunc http.HandlerFunc) func(...string)
 }
 

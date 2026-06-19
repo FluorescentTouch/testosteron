@@ -12,10 +12,10 @@ import (
 
 func TestMain(m *testing.M) {
 	options := []steron.Option{
-		steron.NewPostgresService("docker-hub-nexus.vkteam.ru/postgres:16.6-alpine3.20"),
-		steron.NewRedisService("docker-hub-nexus.vkteam.ru/redis:7.4-alpine"),
-		steron.NewKafkaService("docker-hub-nexus.vkteam.ru/redpandadata/redpanda"),
-		steron.NewMinioService("docker-hub-nexus.vkteam.ru/minio/minio:RELEASE.2024-01-16T16-07-38Z"),
+		steron.NewPostgresService("postgres:16.6-alpine3.20"),
+		steron.NewRedisService("redis:7.4-alpine"),
+		steron.NewKafkaService("redpandadata/redpanda"),
+		steron.NewMinioService("minio/minio:RELEASE.2024-01-16T16-07-38Z"),
 	}
 	cfg, err := steron.Init(options...)
 	if err != nil {
