@@ -13,6 +13,7 @@ type Config struct {
 	Username string
 	Password string
 }
+
 type MinioContainer struct {
 	tc.Container
 
