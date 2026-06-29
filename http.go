@@ -68,7 +68,7 @@ type HandlerCollection struct {
 	handlers sync.Map[func(http.ResponseWriter, *http.Request)]
 }
 
-func New(t *testing.T) *HandlerCollection {
+func NewHandlerCollection(t *testing.T) *HandlerCollection {
 	return &HandlerCollection{
 		t:        t,
 		handlers: sync.MakeSyncMap[func(http.ResponseWriter, *http.Request)](),
