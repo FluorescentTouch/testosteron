@@ -33,17 +33,14 @@ func (h *HTTPHelper) Client(t *testing.T) WebClient {
 }
 
 func (h *HTTPHelper) Server(t *testing.T, envs ...string) WebServer {
-	if s, ok := h.servers.Get(t.Name()); ok {
-		return s
+	s, ok := h.servers.Get(t.Name())
+	if !ok {
+		s = server.NewHTTPServer(t)
+		h.servers.Set(t.Name(), s)
+		t.Cleanup(func() {
+			h.servers.Delete(t.Name())
+		})
 	}
-
-	s := server.NewHTTPServer(t)
-
-	h.servers.Set(t.Name(), s)
-
-	t.Cleanup(func() {
-		h.servers.Delete(t.Name())
-	})
 
 	for _, env := range envs {
 		_ = os.Setenv(env, s.Addr())
