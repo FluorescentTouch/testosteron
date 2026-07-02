@@ -7,7 +7,42 @@ import (
 	"testing"
 
 	"github.com/go-chi/chi/v5"
+
+	"github.com/FluorescentTouch/testosteron/v2/sync"
 )
+
+type handlerCollection struct {
+	t *testing.T
+
+	handlers sync.Map[func(http.ResponseWriter, *http.Request)]
+}
+
+func newHandlerCollection(t *testing.T) *handlerCollection {
+	return &handlerCollection{
+		t:        t,
+		handlers: sync.MakeSyncMap[func(http.ResponseWriter, *http.Request)](),
+	}
+}
+
+func (h *handlerCollection) handle(key string) func(w http.ResponseWriter, r *http.Request) {
+	return func(w http.ResponseWriter, r *http.Request) {
+
+		fn, ok := h.handlers.Get(key)
+		if !ok {
+			h.t.Fatalf("handler not found: %s", key)
+		}
+
+		if fn == nil {
+			h.t.Fatalf("handler is nil: %s", key)
+		}
+
+		fn(w, r)
+	}
+}
+
+func (h *handlerCollection) set(key string, fn func(http.ResponseWriter, *http.Request)) {
+	h.handlers.Set(key, fn)
+}
 
 // HTTPServer emulates http Server.
 // Do not initialize manualy, use Server(t) instead.
@@ -16,13 +51,15 @@ type HTTPServer struct {
 	r *chi.Mux
 
 	t *testing.T
+
+	hc *handlerCollection
 }
 
 func NewHTTPServer(t *testing.T) *HTTPServer {
 	t.Helper()
 
 	r := chi.NewRouter()
-	s := &HTTPServer{s: httptest.NewServer(r), r: r, t: t}
+	s := &HTTPServer{s: httptest.NewServer(r), r: r, t: t, hc: newHandlerCollection(t)}
 	t.Cleanup(func() {
 		s.Cleanup()
 	})
@@ -33,7 +70,9 @@ func NewHTTPServer(t *testing.T) *HTTPServer {
 func (s *HTTPServer) HandleFunc(pattern string, handler http.HandlerFunc) {
 	s.t.Helper()
 
-	s.r.HandleFunc(pattern, handler)
+	s.hc.set(pattern, handler)
+
+	s.r.HandleFunc(pattern, s.hc.handle(pattern))
 }
 
 func (s *HTTPServer) Addr() string {

@@ -1,7 +1,6 @@
 package steron
 
 import (
-	"net/http"
 	"os"
 	"testing"
 
@@ -60,37 +59,4 @@ func (h *HTTPHelper) ServerMain(m *testing.M, envs ...string) WebServer {
 		_ = os.Setenv(env, h.mainServer.Addr())
 	}
 	return h.mainServer
-}
-
-type HandlerCollection struct {
-	t *testing.T
-
-	handlers sync.Map[func(http.ResponseWriter, *http.Request)]
-}
-
-func NewHandlerCollection(t *testing.T) *HandlerCollection {
-	return &HandlerCollection{
-		t:        t,
-		handlers: sync.MakeSyncMap[func(http.ResponseWriter, *http.Request)](),
-	}
-}
-
-func (h *HandlerCollection) Handle(key string) func(w http.ResponseWriter, r *http.Request) {
-	return func(w http.ResponseWriter, r *http.Request) {
-
-		fn, ok := h.handlers.Get(key)
-		if !ok {
-			h.t.Fatalf("handler not found: %s", key)
-		}
-
-		if fn == nil {
-			h.t.Fatalf("handler is nil: %s", key)
-		}
-
-		fn(w, r)
-	}
-}
-
-func (h *HandlerCollection) Set(key string, fn func(http.ResponseWriter, *http.Request)) {
-	h.handlers.Set(key, fn)
 }
