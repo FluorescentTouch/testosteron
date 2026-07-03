@@ -19,7 +19,7 @@ func NewSequenceChecker(t *testing.T) *SequenceChecker {
 	}
 }
 
-func (s *SequenceChecker) expect(value string) {
+func (s *SequenceChecker) Expect(value string) {
 	s.pending.Add(1)
 	select {
 	case s.expects <- value:
