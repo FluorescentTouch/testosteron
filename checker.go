@@ -41,11 +41,11 @@ func (s *SequenceChecker) Verify(got string) {
 	}
 }
 
-func (s *SequenceChecker) VerifyFunc(got string, fn func(want, have string) (equal bool, err error)) {
+func (s *SequenceChecker) VerifyFunc(got []byte, fn func(want, have []byte) (equal bool, err error)) {
 	s.pending.Add(-1)
 	select {
 	case expected := <-s.expects:
-		eq, err := fn(expected, got)
+		eq, err := fn([]byte(expected), got)
 		if err != nil {
 			s.t.Error(err)
 		}
