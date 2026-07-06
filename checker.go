@@ -41,6 +41,22 @@ func (s *SequenceChecker) Verify(got string) {
 	}
 }
 
+func (s *SequenceChecker) VerifyFunc(got string, fn func(want, have string) (equal bool, err error)) {
+	s.pending.Add(-1)
+	select {
+	case expected := <-s.expects:
+		eq, err := fn(expected, got)
+		if err != nil {
+			s.t.Error(err)
+		}
+		if !eq {
+			s.t.Errorf("expect %q, got %q", expected, got)
+		}
+	default:
+		s.t.Errorf("no expected value queued for %q", got)
+	}
+}
+
 func (s *SequenceChecker) Remaining() int32 {
 	return s.pending.Load()
 }
